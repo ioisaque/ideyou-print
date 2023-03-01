@@ -1,0 +1,5 @@
+Flask==2.2.3
+Flask_Cors==3.0.10
+PyPDF2==3.0.1
+PyQt6==6.4.2
+pywin32==305
