@@ -12,15 +12,20 @@ class PrintServer(Flask):
     def __init__(self, ui, name):
         super().__init__(name)
         self.ui = ui
-        self.__log(f'Server init.')
         self.add_url_rule('/', '', self.__index)
         self.add_url_rule('/print', 'print', self.__print, methods=['POST'])
 
+        self.__log(f'Print server initialized at port 6969.')
+
     def __index(self):
-        ip_address = request.remote_addr
-        device_name = request.user_agent.string  # This is the device name
-        self.__log(f'PING received from {ip_address} on {device_name}.')
-        response = {'message': socket.gethostname(), 'type': 'success'}
+        host = socket.gethostname()
+        hostip = socket.gethostbyname_ex(host)[-1][0]
+
+        clientip = request.remote_addr
+        client = request.user_agent.string  # This is the device name
+
+        self.__log(f'PING received from {clientip} on {client}.')
+        response = {'name': host, 'ip': hostip}
         return self.__create_response(response)
 
     def __print(self):
@@ -38,7 +43,7 @@ class PrintServer(Flask):
         else:
             response = {
                 'message': 'Pedido recebido para impressão!', 'type': 'success'}
-            self.__log(f'Imprimindo pedido {p.get("id")}, de "{p.get("full_url")}".')
+            self.__log(f'Pedido {p.get("id")} enviado para {self.ui.get_printer()}.')
             self.__print_file(p.get('id'), p.get('full_url'))
 
         return self.__create_response(response)
@@ -50,9 +55,12 @@ class PrintServer(Flask):
     def __print_file(self, id: int, online_path: str):
         file_name = f'Pedido#{id}.pdf'
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
-        gs_command = f'{CONFIG["command"]} {CONFIG["options"]} {local_path}'
 
         try:
+            printer = self.ui.get_printer()
+            options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile=%|lp{printer}' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile=%printer%{printer}'
+
+            gs_command = f'{CONFIG["command"]} {options} {local_path}'
             subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
             subprocess.run(gs_command)
         except Exception as error:

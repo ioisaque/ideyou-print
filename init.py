@@ -9,37 +9,44 @@ CONFIG = {}
 def load():
     global CONFIG
 
-    CONFIG['isMacOS'] = sys.platform != 'windows'
+    CONFIG['isMacOS'] = str(sys.platform).find('win')
+    CONFIG['printers'] = []
 
     if CONFIG['isMacOS']:  # macOS
-        CONFIG['tmp'] = tempfile.gettempdir()
-        CONFIG['opt'] = os.popen('lpstat -d').read()
-        CONFIG['printer'] = CONFIG['opt'].split(
-            'system default destination: ')[-1].strip()
+        default = os.popen('lpstat -d').read().split('system default destination: ')[-1].strip()
+
+        for line in os.popen('lpstat -v').readlines():
+            name = line.split(":")[0].replace("device for ", "").strip()
+
+            if name != default:
+                CONFIG['printers'].append(name)
+            else:
+                CONFIG['printers'].insert(0, name)
 
         CONFIG['command'] = 'gs'
         CONFIG['sDevice'] = 'ljet4'
-        CONFIG['rootPTH'] = f'{CONFIG["tmp"]}/'
-        CONFIG['sOutput'] = f'%|lp{CONFIG["printer"]}'
+        CONFIG['rootPTH'] = f'{tempfile.gettempdir()}/'
     else:  # Windows
-        CONFIG['opt'] = os.popen('wmic printer get name,default').read()
-        CONFIG['printer'] = [line.split()[1] for line in CONFIG['opt'].split('\n') if 'TRUE' in line][0] if [
-            line.split()[1] for line in CONFIG['opt'].split('\n') if 'TRUE' in line] else None
+        lines = os.popen('wmic printer get name,default').read().split('\n')[1:-2]
+
+        for line in lines:
+            default, name = line[0:6].strip(), line[6:].strip()
+
+            if default == 'TRUE':
+                CONFIG['printers'].insert(0, name)
+            elif name:
+                CONFIG['printers'].append(name)
 
         CONFIG['command'] = 'gswin32c.exe'
         CONFIG['sDevice'] = 'mswinpr2'
         CONFIG['rootPTH'] = f'C:/temp/'
-        CONFIG['sOutput'] = f'%printer%{CONFIG["printer"]}'
-
-    CONFIG['options'] = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile={CONFIG["sOutput"]}'
 
     try:
-        CONFIG['gsVersion'] = subprocess.check_output(
-            [CONFIG['command'], '-v']).decode('utf-8')
+        CONFIG['gsVersion'] = subprocess.check_output([CONFIG['command'], '-v']).decode('utf-8')
         CONFIG['gsVersion'] = CONFIG['gsVersion'].split('\n')[0]
         CONFIG['gsVersion'] = CONFIG['gsVersion'].split('(')[0].strip()
 
     except subprocess.CalledProcessError:
-        CONFIG['gsVersion'] = "Ghostscript NÃO ENCONTRADO."
+        CONFIG['gsVersion'] = None
 
     return CONFIG
