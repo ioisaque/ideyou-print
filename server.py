@@ -2,30 +2,52 @@ import os
 import json
 import socket
 import subprocess
-from PyQt6 import QtCore
+
+from PyQt6.QtCore import QThread
+from waitress import serve
+
 from init import CONFIG
 from flask import Flask, request, jsonify
 
 
-class PrintServer(Flask):
+class PrintServer(QThread):
+    def __init__(self, ui):
+        super(PrintServer, self).__init__()
+        self.shutdown = False
 
-    def __init__(self, ui, name):
-        super().__init__(name)
         self.ui = ui
-        self.add_url_rule('/', '', self.__index)
-        self.add_url_rule('/print', 'print', self.__print, methods=['POST'])
+        self.app = Flask(__name__)
+        self.host = socket.gethostname()
+        self.ipaddr = socket.gethostbyname_ex(self.host)[-1][0]
 
-        self.__log(f'Print server initialized at port 6969.')
+        self.app.add_url_rule('/', '', self.__index)
+        self.app.add_url_rule('/print', 'print', self.__print, methods=['POST'])
+
+    def run(self):
+        while not self.shutdown:
+            try:
+                serve(self.app, host='0.0.0.0', port=6969)
+            except Exception as e:
+                print(e.__repr__())
+            finally:
+                if self.shutdown:
+                    break
+
+    def stop(self):
+        try:
+            self.shutdown = True
+            self.quit()
+
+        except Exception as e:
+            print(e.__repr__())
 
     def __index(self):
-        host = socket.gethostname()
-        hostip = socket.gethostbyname_ex(host)[-1][0]
+        ip = request.remote_addr
+        client = request.user_agent.string
 
-        clientip = request.remote_addr
-        client = request.user_agent.string  # This is the device name
+        self.__log(f'PING received from {ip} on {client}.')
 
-        self.__log(f'PING received from {clientip} on {client}.')
-        response = {'name': host, 'ip': hostip}
+        response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)
 
     def __print(self):
@@ -50,7 +72,8 @@ class PrintServer(Flask):
 
     def __log(self, message):
         print(message)
-        # QtCore.QMetaObject.invokeMethod(self.ui, 'log', QtCore.Qt.ConnectionType.QueuedConnection, QtCore.Q_ARG(str, message))
+        # self.ui.log(message)
+        # QMetaObject.invokeMethod(self.ui, 'log', Qt.ConnectionType.QueuedConnection, Q_ARG(str, message))
 
     def __print_file(self, id: int, online_path: str):
         file_name = f'Pedido#{id}.pdf'

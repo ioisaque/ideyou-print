@@ -1,22 +1,37 @@
+import sys
+from PyQt6 import uic
+from PyQt6.QtWidgets import QMainWindow
+
 from init import load, CONFIG
-from PyQt6 import QtWidgets, uic
+from server import PrintServer
 
-MainViewUi, QtBaseClass = uic.loadUiType("assets/main.ui")
+if hasattr(sys, '_MEIPASS'):
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    assets_path = sys._MEIPASS + '/assets/'
+else:
+    assets_path = 'assets/'
+
+MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'main.ui')
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QMainWindow):
 
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super().__init__()
         self.ui = MainViewUi()
         self.ui.setupUi(self)
-        self.ui.btn_reload.clicked.connect(self.__reload)
+
+        self.srv = PrintServer(self)
+        self.ui.btn_reload.clicked.connect(self.reload)
 
         if CONFIG["gsVersion"]:
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
 
             self.ui.select_printer.addItems(CONFIG['printers'])
+            self.srv.start()
+
+        self.show()
 
     def get_printer(self):
         return self.ui.select_printer.currentText()
@@ -24,9 +39,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def log(self, l: str):
         old = self.ui.log_box.toPlainText()
         self.ui.log_box.setText(old + ('\n' if len(old) else '') + l)
-        return 0
 
-    def __reload(self):
+    def reload(self):
+        self.srv.stop()
         load()
-        self.ui.log_box.setText('Configurações recarregadas...')
+        self.srv.start()
 
