@@ -39,7 +39,7 @@ def load():
 
         CONFIG['command'] = 'gswin32c.exe'
         CONFIG['sDevice'] = 'mswinpr2'
-        CONFIG['rootPTH'] = f'C:/temp/'
+        CONFIG['rootPTH'] = f'C:/tmp/'
 
     try:
         CONFIG['gsVersion'] = subprocess.check_output([CONFIG['command'], '-v']).decode('utf-8')

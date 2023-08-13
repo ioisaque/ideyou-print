@@ -8,6 +8,7 @@ from waitress import serve
 
 from init import CONFIG
 from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
 
 
 class PrintServer(QThread):
@@ -17,6 +18,8 @@ class PrintServer(QThread):
 
         self.ui = ui
         self.app = Flask(__name__)
+        self.cors = CORS(self.app)
+        self.app.config['CORS_HEADERS'] = 'Content-Type'
         self.host = socket.gethostname()
         self.ipaddr = socket.gethostbyname_ex(self.host)[-1][0]
 
@@ -41,6 +44,7 @@ class PrintServer(QThread):
         except Exception as e:
             print(e.__repr__())
 
+    @cross_origin()
     def __index(self):
         ip = request.remote_addr
         client = request.user_agent.string
@@ -50,6 +54,7 @@ class PrintServer(QThread):
         response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)
 
+    @cross_origin()
     def __print(self):
         p = json.loads(request.data)
 
@@ -81,9 +86,10 @@ class PrintServer(QThread):
 
         try:
             printer = self.ui.get_printer()
-            options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile=%|lp{printer}' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile=%printer%{printer}'
+            options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%printer%{printer}"'
 
             gs_command = f'{CONFIG["command"]} {options} {local_path}'
+            print(f'{gs_command}')
             subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
             subprocess.run(gs_command)
         except Exception as error:
