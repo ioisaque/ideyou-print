@@ -1,8 +1,8 @@
 import sys
+
+from init import CONFIG, load
 from PyQt6 import uic
 from PyQt6.QtWidgets import QMainWindow
-
-from init import load, CONFIG
 from server import PrintServer
 
 if hasattr(sys, '_MEIPASS'):
@@ -25,8 +25,8 @@ class MainWindow(QMainWindow):
         self.ui.btn_reload.clicked.connect(self.reload)
 
         if CONFIG["gsVersion"]:
-            self.ui.gsv_label.setText(CONFIG["gsVersion"])
-            self.ui.gsv_label.setStyleSheet('color: #000;')
+            # self.ui.gsv_label.setText(CONFIG["gsVersion"])
+            # self.ui.gsv_label.setStyleSheet('color: #000;')
 
             self.ui.select_printer.addItems(CONFIG['printers'])
             self.srv.start()
