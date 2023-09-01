@@ -7,8 +7,8 @@ from init import CONFIG
 class Api:
 
     def __init__(self):
-        self.__retry_amount = 10
-        self.__connection_retry_timeout = 30
+        self.__retry_amount = 3
+        self.__connection_retry_timeout = 10
         self.__base_url: str = f'{CONFIG["sistema"]}/webservices'
 
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
@@ -36,11 +36,11 @@ class Api:
 
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
-    def get_pending_requests_to_print(self, store_id: int, parameters: str) -> list:
+    def get_wating_orders(self, id_loja: int = 1) -> list:
         url = f"{self.__base_url}/pedidos/"
         payload: dict = {
-            "id_loja": store_id,
-            "listar": parameters
+            "listar": "queue",
+            "id_loja": id_loja
         }
 
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')

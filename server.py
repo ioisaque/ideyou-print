@@ -7,6 +7,7 @@ import requests
 from PyQt6.QtCore import QThread
 from waitress import serve
 
+from api import Api
 from init import CONFIG
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
@@ -15,9 +16,11 @@ from flask_cors import CORS, cross_origin
 class PrintServer(QThread):
     def __init__(self, ui):
         super(PrintServer, self).__init__()
+        self.running = False
         self.shutdown = False
 
         self.ui = ui
+        self.api = Api()
         self.app = Flask(__name__)
         self.cors = CORS(self.app)
         self.app.config['CORS_HEADERS'] = 'Content-Type'
@@ -28,6 +31,7 @@ class PrintServer(QThread):
         self.app.add_url_rule('/print', 'print', self.__print, methods=['POST'])
 
     def run(self):
+        self.running = True
         while not self.shutdown:
             try:
                 serve(self.app, host='0.0.0.0', port=6969)
@@ -41,19 +45,26 @@ class PrintServer(QThread):
         try:
             self.shutdown = True
             self.quit()
+            self.running = False
 
         except Exception as e:
             print(e.__repr__())
 
     @cross_origin()
     def __index(self):
-        count = 0
         ip = request.remote_addr
         client = request.user_agent.string
 
         self.__log(f'PING received from {ip} on {client}.')
 
-        self.__log(f'Loja {self.ui.get_loja()} verificada, {count} pedidos na fila.')
+        id_loja = 1
+        template = "bundle"
+        queue = self.api.get_wating_orders(id_loja)
+        self.__log(f'Loja {id_loja} verificada, {queue.get("waiting")} pedidos na fila.')
+
+        for pedido in queue.get('lista'):
+            if pedido.get("delivery") in ['0', '1']:
+                self.__log(f'{CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}')
 
         response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)
@@ -84,20 +95,20 @@ class PrintServer(QThread):
         # self.ui.log(message)
         # QMetaObject.invokeMethod(self.ui, 'log', Qt.ConnectionType.QueuedConnection, Q_ARG(str, message))
 
-    def __print_file(self, id: int, online_path: str):
+    def print_file(self, id: int, online_path: str):
         file_name = f'Pedido#{id}.pdf'
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
 
         try:
             printer = self.ui.get_printer()
-            options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies=1 -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%printer%{printer}"'
+            options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies={CONFIG["nCopies"]} -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies={CONFIG["nCopies"]} -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%printer%{printer}"'
 
             gs_command = f'{CONFIG["command"]} {options} {local_path}'
-            print(f'{gs_command}')
+            self.__log(f'{gs_command}')
             subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
             subprocess.run(gs_command)
         except Exception as error:
-            print(error)
+            self.__log(error)
         finally:
             os.remove(local_path)
 

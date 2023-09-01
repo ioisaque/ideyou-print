@@ -9,8 +9,16 @@ CONFIG = {}
 def load():
     global CONFIG
 
-    CONFIG['isMacOS'] = str(sys.platform).find('win')
+    CONFIG["nCopies"] = 1
     CONFIG['printers'] = []
+    CONFIG['lojas'] = ['UNKNOW']
+    CONFIG['sistema'] = "https://ideyou.com.br/burgerflix/sistema"
+
+    CONFIG['deliveryTemplate'] = "bundle"
+    CONFIG['balcaoTemplate'] = "comanda"
+    CONFIG['printTypes'] = ['0', '1']
+
+    CONFIG['isMacOS'] = str(sys.platform).find('win')
 
     if CONFIG['isMacOS']:  # macOS
         default = os.popen('lpstat -d').read().split('system default destination: ')[-1].strip()
@@ -48,8 +56,5 @@ def load():
 
     except subprocess.CalledProcessError:
         CONFIG['gsVersion'] = None
-
-    CONFIG['sistema'] = "https://sistema.lmsalgados.com.br/"
-    CONFIG['lojas'] = []
 
     return CONFIG
