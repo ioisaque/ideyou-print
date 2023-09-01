@@ -3,6 +3,7 @@ import json
 import socket
 import subprocess
 
+import requests
 from PyQt6.QtCore import QThread
 from waitress import serve
 
@@ -46,10 +47,13 @@ class PrintServer(QThread):
 
     @cross_origin()
     def __index(self):
+        count = 0
         ip = request.remote_addr
         client = request.user_agent.string
 
         self.__log(f'PING received from {ip} on {client}.')
+
+        self.__log(f'Loja {self.ui.get_loja()} verificada, {count} pedidos na fila.')
 
         response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)

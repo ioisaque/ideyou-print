@@ -1,5 +1,8 @@
 import sys
 
+import requests
+
+from api import Api
 from init import CONFIG, load
 from PyQt6 import uic
 from PyQt6.QtWidgets import QMainWindow
@@ -21,17 +24,27 @@ class MainWindow(QMainWindow):
         self.ui = MainViewUi()
         self.ui.setupUi(self)
 
+        self.api = Api()
         self.srv = PrintServer(self)
         self.ui.btn_reload.clicked.connect(self.reload)
 
         if CONFIG["gsVersion"]:
-            # self.ui.gsv_label.setText(CONFIG["gsVersion"])
-            # self.ui.gsv_label.setStyleSheet('color: #000;')
+            self.ui.gsv_label.setText(CONFIG["gsVersion"])
+            self.ui.gsv_label.setStyleSheet('color: #000;')
+
+            self.srv.start()
+            CONFIG['lojas'] = self.api.get_stores()
 
             self.ui.select_printer.addItems(CONFIG['printers'])
-            self.srv.start()
+            self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
         self.show()
+
+    def get_sistema_url(self):
+        return self.ui.input_url_sistema.toPlainText()
+
+    def get_loja(self):
+        return self.ui.select_loja.currentText()
 
     def get_printer(self):
         return self.ui.select_printer.currentText()
@@ -44,4 +57,3 @@ class MainWindow(QMainWindow):
         self.srv.stop()
         load()
         self.srv.start()
-

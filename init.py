@@ -49,4 +49,7 @@ def load():
     except subprocess.CalledProcessError:
         CONFIG['gsVersion'] = None
 
+    CONFIG['sistema'] = "https://sistema.lmsalgados.com.br/"
+    CONFIG['lojas'] = []
+
     return CONFIG

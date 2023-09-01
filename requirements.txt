@@ -1,4 +1,6 @@
 Flask==2.2.3
 PyQt6==6.4.2
 waitress~=2.1.2
-flask-cors
+pypdf2~=3.0.1
+pywin32~=305
+requests~=2.31.0
