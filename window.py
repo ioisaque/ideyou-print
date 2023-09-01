@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 
 import requests
 
@@ -27,11 +28,24 @@ class MainWindow(QMainWindow):
         self.api = Api()
         self.srv = PrintServer(self)
         self.ui.btn_reload.clicked.connect(self.load)
+        self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
 
         if CONFIG["gsVersion"]:
             self.load()
 
+            # Log current time
+            count = 0
+            current_time = datetime.now()
+            self.ui.last_checked.setText(current_time.strftime(f'Última checagem ás %H:%M:%S [{count} pedidos]'))
+
         self.show()
+
+    def limit_orderid_length(self):
+        max_length = 8
+        current_text = self.ui.input_id_pedido.toPlainText()
+
+        if len(current_text) > max_length:
+            self.ui.input_id_pedido.setPlainText(current_text[:max_length])
 
     def get_sistema_url(self):
         return self.ui.input_url_sistema.toPlainText()
@@ -55,9 +69,11 @@ class MainWindow(QMainWindow):
         self.ui.gsv_label.setText(CONFIG["gsVersion"])
         self.ui.gsv_label.setStyleSheet('color: #000;')
 
-        self.ui.input_url_sistema.setText(CONFIG['sistema'])
-        CONFIG['lojas'] = self.api.get_stores()
         self.ui.select_printer.addItems(CONFIG['printers'])
+        self.ui.input_url_sistema.setText(CONFIG['sistema'])
+
+        CONFIG['lojas'] = self.api.get_stores()
+        self.ui.select_loja.clear()
         self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
         CONFIG['printTypes'] = []
