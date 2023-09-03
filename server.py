@@ -7,10 +7,15 @@ import requests
 from PyQt6.QtCore import QThread
 from waitress import serve
 
-from api import Api
+from api import IdeYouApi
 from init import CONFIG
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
+
+template_mapping = {
+    "0": "balcaoTemplate",
+    "1": "deliveryTemplate"
+}
 
 
 class PrintServer(QThread):
@@ -20,7 +25,7 @@ class PrintServer(QThread):
         self.shutdown = False
 
         self.ui = ui
-        self.api = Api()
+        self.api = IdeYouApi(ui)
         self.app = Flask(__name__)
         self.cors = CORS(self.app)
         self.app.config['CORS_HEADERS'] = 'Content-Type'
@@ -57,14 +62,16 @@ class PrintServer(QThread):
 
         self.__log(f'PING received from {ip} on {client}.')
 
-        id_loja = 1
-        template = "bundle"
+        # PRINT FROM QUEUE EXAMPLE:
+        id_loja = self.ui.dStore
         queue = self.api.get_wating_orders(id_loja)
-        self.__log(f'Loja {id_loja} verificada, {queue.get("waiting")} pedidos na fila.')
+
+        self.ui.last_checked = queue.get("waiting")
 
         for pedido in queue.get('lista'):
-            if pedido.get("delivery") in ['0', '1']:
-                self.__log(f'{CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}')
+            if int(pedido.get("delivery")) in CONFIG['printTypes']:
+                template = CONFIG[template_mapping.get(pedido.get("delivery"), "")]
+                self.__log(f'Print {CONFIG["nCopies"]} copies of: {CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}')
 
         response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)
@@ -85,7 +92,7 @@ class PrintServer(QThread):
         else:
             response = {
                 'message': 'Pedido recebido para impressão!', 'type': 'success'}
-            self.__log(f'Pedido {p.get("id")} enviado para {self.ui.get_printer()}.')
+            self.__log(f'Pedido {p.get("id")} enviado para {self.ui.dPrinter()}.')
             self.__print_file(p.get('id'), p.get('full_url'))
 
         return self.__create_response(response)
@@ -100,7 +107,7 @@ class PrintServer(QThread):
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
 
         try:
-            printer = self.ui.get_printer()
+            printer = self.ui.dPrinter()
             options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies={CONFIG["nCopies"]} -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies={CONFIG["nCopies"]} -sDEVICE={CONFIG["sDevice"]} -sOutputFile="%printer%{printer}"'
 
             gs_command = f'{CONFIG["command"]} {options} {local_path}'

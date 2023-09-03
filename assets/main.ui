@@ -77,7 +77,7 @@ background: #FFF;</string>
      <attribute name="title">
       <string>Script</string>
      </attribute>
-     <widget class="QTableWidget" name="log_table">
+     <widget class="QTableWidget" name="log_box">
       <property name="geometry">
        <rect>
         <x>10</x>

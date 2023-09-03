@@ -1,17 +1,26 @@
 import logging
 import requests
 from time import sleep
+
+from PyQt6.QtCore import QThread
+
 from init import CONFIG
 
 
-class Api:
+class IdeYouApi(QThread):
 
-    def __init__(self):
+    def __init__(self, ui):
+        super(IdeYouApi, self).__init__()
+
+        self.ui = ui
         self.__retry_amount = 3
         self.__connection_retry_timeout = 10
         self.__base_url: str = f'{CONFIG["sistema"]}/webservices'
 
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
+
+        if CONFIG["sistema"] == '':
+            return self.ui.alert('Fonte indefinida', 'Sistema não definido!')
 
         if headers is None:
             headers = {}
@@ -34,7 +43,12 @@ class Api:
             "listar": "todos"
         }
 
-        return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+        print('Loading stores...')
+        lista = self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+
+        # [(loja.get('nome'), loja.get('id')) for loja in lista]
+
+        return lista
 
     def get_wating_orders(self, id_loja: int = 1) -> list:
         url = f"{self.__base_url}/pedidos/"
@@ -43,6 +57,7 @@ class Api:
             "id_loja": id_loja
         }
 
+        print('Checking orders...')
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
     @property

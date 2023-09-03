@@ -1,22 +1,44 @@
+import json
 import os
 import subprocess
 import sys
 import tempfile
 
 CONFIG = {}
+S_CONFIG = ["dStore",
+            "nCopies",
+            "dPrinter",
+            'lojas',
+            'sistema',
+            'deliveryTemplate',
+            'balcaoTemplate',
+            'printTypes']
+
+
+def save():
+    params = {}
+
+    for key in S_CONFIG:
+        params[key] = CONFIG[key]
+
+    with open(f'{CONFIG["rootPTH"]}ideyou_config.json', "w") as jsonfile:
+        jsonfile.write(json.dumps(params))
 
 
 def load():
     global CONFIG
+    global S_CONFIG
 
+    CONFIG["dStore"] = 1
     CONFIG["nCopies"] = 1
-    CONFIG['printers'] = []
+    CONFIG["dPrinter"] = ""
     CONFIG['lojas'] = ['UNKNOW']
     CONFIG['sistema'] = "https://ideyou.com.br/burgerflix/sistema"
 
     CONFIG['deliveryTemplate'] = "bundle"
     CONFIG['balcaoTemplate'] = "comanda"
-    CONFIG['printTypes'] = ['0', '1']
+    CONFIG['printTypes'] = [0, 1]
+    CONFIG['printers'] = []
 
     CONFIG['isMacOS'] = str(sys.platform).find('win')
 
@@ -47,7 +69,7 @@ def load():
 
         CONFIG['command'] = 'gswin32c.exe'
         CONFIG['sDevice'] = 'mswinpr2'
-        CONFIG['rootPTH'] = f'C:/tmp/'
+        CONFIG['rootPTH'] = f'C:/temp/'
 
     try:
         CONFIG['gsVersion'] = subprocess.check_output([CONFIG['command'], '-v']).decode('utf-8')
@@ -56,5 +78,17 @@ def load():
 
     except subprocess.CalledProcessError:
         CONFIG['gsVersion'] = None
+
+    ideyou_config = f'{CONFIG["rootPTH"]}ideyou_config.json'
+
+    if os.path.exists(ideyou_config):
+        with open(ideyou_config, "r") as jsonfile:
+            saved = json.load(jsonfile)
+
+            for key in saved:
+                CONFIG[key] = saved[key]
+    else:
+        with open(ideyou_config, "w") as jsonfile:
+            json.dump({key: CONFIG[key] for key in S_CONFIG}, jsonfile)
 
     return CONFIG
