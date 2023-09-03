@@ -3,19 +3,15 @@ import urllib
 from datetime import datetime
 import re
 
-from init import CONFIG, load, save
+from PyQt6.QtPdf import QPdfDocument
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+
+from init import CONFIG, load, save, reverse_template_mapping, template_mapping
 from PyQt6 import uic
 from PyQt6.QtCore import QUrl
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout
-from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtPdfWidgets import QPdfView
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea
 from server import PrintServer
-
-template_mapping = {
-    "Padrão": "bundle",
-    "Apenas Comanda": "comanda",
-    "Apenas Recibo": "recibo"
-}
-reverse_template_mapping = {v: k for k, v in template_mapping.items()}
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -92,6 +88,7 @@ class MainWindow(QMainWindow):
             self.ui.btn_reload.clicked.connect(self.load)
             self.ui.btn_recheck.clicked.connect(self.check)
             self.ui.btn_print.clicked.connect(self.__print)
+            self.ui.btn_cleanup.clicked.connect(self.api.clean_up_files)
 
             self.ui.input_url_sistema.textChanged.connect(self.save)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
@@ -106,20 +103,6 @@ class MainWindow(QMainWindow):
             self.ui.cb_print_delivery.stateChanged.connect(self.save)
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
-
-            # Create a vertical layout for the central widget
-            layout = QVBoxLayout()
-            self.ui.preview_widget.setLayout(layout)
-
-            # Create a QWebEngineView widget to display web content
-            webview = QWebEngineView()
-            layout.addWidget(webview)
-
-            # Load a URL into the QWebEngineView
-            url = urllib.parse.quote(f'file://{CONFIG["rootPTH"]}comanda.pdf', safe=':/?&=')
-            # url = urllib.parse.quote(f'{CONFIG["sistema"]}/views/print/?id={30}', safe=':/?&=')
-            self.log = f'Previewing - {url}'
-            webview.setUrl(QUrl(url))
 
         self.show()
         self.srv.start()
@@ -138,15 +121,9 @@ class MainWindow(QMainWindow):
             id_pedido = int(self.ui.input_id_pedido.toPlainText())
             pedido = self.api.get_order_by_id(id_pedido)
 
-        if pedido:
-            id_pedido = int(pedido.get("id"))
-            template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
-            _template = reverse_template_mapping.get(template, "Padrão")
-
-            self.log = f'#=> Imprimir {CONFIG["nCopies"]}x [{_template}], pedido Nº <span style="color: #0000FF;">{id_pedido}</span> na {CONFIG["dPrinter"]}. <a href="{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
-
+        if len(pedido):
             # NEED CROSS-THREAD CALL
-            # self.srv.print_file(id_pedido, f'{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}')
+            self.api.print_order(pedido)
         else:
             self.log = f'Erro ao imprimir [{id_pedido}], pedido não encontrado.'
 
@@ -186,6 +163,49 @@ class MainWindow(QMainWindow):
 
         if not self.srv.running:
             self.srv.start()
+
+    def preview(self, path_or_addr):
+        self.log = f'Previewing - {path_or_addr}'
+
+        # Check if there's an existing layout and remove it if present
+        # if self.ui.preview_widget.layout():
+        #     self.ui.preview_widget.clear()
+
+        if 'http' in path_or_addr:
+            # Create a vertical layout for the central widget
+            layout = QVBoxLayout()
+
+            # Create a QWebEngineView widget to display web content
+            webview = QWebEngineView()
+            layout.addWidget(webview)
+
+            # Load a URL into the QWebEngineView
+            url = urllib.parse.quote(path_or_addr, safe=':/?&=')
+            webview.setUrl(QUrl.fromLocalFile(url) if 'file://' in url else QUrl(url))
+        else:
+            # Create a QPdfView widget
+            pdf_view = QPdfView(self)
+
+            # Create a QPdfDocument instance with a parent
+            pdf_document = QPdfDocument(pdf_view)
+
+            # Load the PDF from a file
+            pdf_document.load(path_or_addr)
+
+            # Set the PDF document for the QPdfView
+            pdf_view.setDocument(pdf_document)
+
+            # Create a scroll area widget
+            scroll_area = QScrollArea()
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setWidget(pdf_view)
+
+            # Create a layout and add the scroll area widget to it
+            layout = QVBoxLayout()
+            layout.addWidget(scroll_area)
+
+        # Set the layout for the preview widget
+        self.ui.preview_widget.setLayout(layout)
 
     @property
     def log(self):
@@ -328,7 +348,7 @@ class MainWindow(QMainWindow):
 
         # Check the result (button clicked)
         if result == QMessageBox.StandardButton.Ok:
-            self.log = "OK button clicked"
+            print("OK button clicked")
             # alert.exit(0)
 
     def limit_orderid_length(self):

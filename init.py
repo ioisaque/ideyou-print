@@ -14,6 +14,12 @@ S_CONFIG = ["dStore",
             'balcaoTemplate',
             'printTypes']
 
+template_mapping = {
+    "Padrão": "bundle",
+    "Apenas Comanda": "comanda",
+    "Apenas Recibo": "recibo"
+}
+reverse_template_mapping = {v: k for k, v in template_mapping.items()}
 
 def save():
     params = {}

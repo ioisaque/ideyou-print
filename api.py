@@ -1,10 +1,14 @@
 import logging
+import os
+import re
+import subprocess
+
 import requests
 from time import sleep
 
 from PyQt6.QtCore import QThread
 
-from init import CONFIG
+from init import CONFIG, reverse_template_mapping
 
 
 class IdeYouApi(QThread):
@@ -31,7 +35,7 @@ class IdeYouApi(QThread):
         if base_url.endswith('/'):
             base_url = base_url[:-1]
 
-        base_url = f'{base_url}/webservices'
+        # base_url = f'{base_url}/webservices'
 
         return base_url
 
@@ -58,7 +62,7 @@ class IdeYouApi(QThread):
                     break
 
     def get_order_by_id(self, id_pedido: int = 0) -> list:
-        url = f"{self.base_url}/pedidos/"
+        url = f"{self.base_url}/webservices/pedidos/"
         payload: dict = {
             "id": id_pedido
         }
@@ -67,7 +71,7 @@ class IdeYouApi(QThread):
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
     def get_stores(self) -> list:
-        url = f"{self.base_url}/lojas/"
+        url = f"{self.base_url}/webservices/lojas/"
         payload: dict = {
             "listar": "todos"
         }
@@ -78,7 +82,7 @@ class IdeYouApi(QThread):
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
 
     def get_wating_orders(self, id_loja: int = 0) -> list:
-        url = f"{self.base_url}/pedidos/"
+        url = f"{self.base_url}/webservices/pedidos/"
         payload: dict = {
             "listar": "queue",
             "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
@@ -86,3 +90,57 @@ class IdeYouApi(QThread):
 
         self.ui.log = 'Buscando pedidos na fila...'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+
+    def download_order(self, pedido: dict) -> str | int:
+        id_pedido = int(pedido.get('id'))
+        template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+
+        file_name = f'Pedido#{id_pedido}.pdf'
+        local_path = os.path.join(CONFIG["rootPTH"], file_name)
+        online_path = f'{self.base_url}/views/print/?id={id_pedido}&template={template}'
+
+        try:
+            self.ui.log = f'Downloading {file_name}'
+            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+            return file_name
+        except Exception as error:
+            self.ui.log = error
+            return 500
+        finally:
+            self.ui.preview(local_path)
+
+    def print_order(self, pedido: dict):
+        id_pedido = int(pedido.get('id'))
+        template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+        _template = reverse_template_mapping.get(template, "Padrão")
+
+        try:
+            printer = self.ui.dPrinter
+            file_name = self.download_order(pedido)
+
+            if not file_name == 500:
+                local_path = os.path.join(CONFIG["rootPTH"], file_name)
+
+                options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%printer%{printer}"'
+
+                gs_command = f'{CONFIG["command"]} {options} {local_path}'
+                self.ui.log = f'#=> Imprimir {CONFIG["nCopies"]}x [{_template}], pedido Nº <span style="color: #0000FF;">{id_pedido}</span> na {CONFIG["dPrinter"]}. <a href="{self.base_url}/views/print/?id={id_pedido}&template={template}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+
+                # subprocess.run(gs_command)
+        except Exception as error:
+            self.ui.log = error
+        # finally:
+            # os.remove(local_path)
+
+    def clean_up_files(self):
+        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'Pedido#\d+\.pdf', file)]
+
+        # Iterate through the list of files and delete them
+        for file_name in files_to_delete:
+            file_path = os.path.join(CONFIG["rootPTH"], file_name)
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                self.ui.log = f"AVISO: Erro ao tentar apagar arquivo temporário: {file_path}. Error: {str(e)}"
+            finally:
+                self.ui.alert('Sucesso!', 'Limpeza de arquivos efetuada.')
