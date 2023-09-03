@@ -38,6 +38,7 @@ class PrintServer(QThread):
                 print(e.__repr__())
             finally:
                 if self.shutdown:
+                    self.ui.log = 'Stopping SRV...'
                     break
 
     def stop(self):
@@ -80,7 +81,7 @@ class PrintServer(QThread):
 
             # f'{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}'
 
-            self.__print_file(p.get('id'), p.get('full_url'))
+            self.print_file(p.get('id'), p.get('full_url'))
 
         return self.__create_response(response)
 

@@ -18,14 +18,26 @@ class IdeYouApi(QThread):
 
     @property
     def base_url(self) -> str:
-        if any(addr in self.ui.sistema for addr in ["192.168", "block", "local", "127.0.0.1"]):
-            return f'{self.ui.sistema}/webservices'
+        base_url = f'{self.ui.sistema}' + ""
+
+        if any(addr in base_url for addr in ["192.168", "block", "local", "127.0.0.1"]):
+            if not base_url.startswith("http"):
+                base_url = f'http://{base_url}'
         else:
-            return f'{self.ui.sistema if self.ui.sistema.startswith("https") else self.ui.sistema.replace("http", "https")}/webservices'
+            base_url = f'{base_url if base_url.startswith("https") else base_url.replace("http", "https")}'
+            if not base_url.startswith("https"):
+                base_url = f'https://{base_url}'
+
+        if base_url.endswith('/'):
+            base_url = base_url[:-1]
+
+        base_url = f'{base_url}/webservices'
+
+        return base_url
 
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
 
-        if self.base_url == '':
+        if self.ui.sistema == '':
             return self.ui.alert('Erro 400', 'Caminho do sistema indefinido, informe a\nURL do seu sistema para utilizar o serviço.')
 
         if headers is None:
@@ -45,13 +57,22 @@ class IdeYouApi(QThread):
                 if i > self.__retry_amount:
                     break
 
+    def get_order_by_id(self, id_pedido: int = 0) -> list:
+        url = f"{self.base_url}/pedidos/"
+        payload: dict = {
+            "id": id_pedido
+        }
+
+        self.ui.log = f'Buscando pedido {id_pedido}...'
+        return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+
     def get_stores(self) -> list:
         url = f"{self.base_url}/lojas/"
         payload: dict = {
             "listar": "todos"
         }
 
-        self.ui.log = 'Loading stores...'
+        self.ui.log = 'Buscando listagem de lojas...'
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
@@ -63,5 +84,5 @@ class IdeYouApi(QThread):
             "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
         }
 
-        self.ui.log = 'Checking orders...'
+        self.ui.log = 'Buscando pedidos na fila...'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')

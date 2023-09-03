@@ -89,11 +89,11 @@ class MainWindow(QMainWindow):
                 self.ui.select_modelo_delivery.setCurrentIndex(0)
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
-            self.ui.btn_reload.clicked.connect(self.load)  # TESTING ONLY
-            self.ui.btn_reload_2.clicked.connect(self.check)  # TESTING ONLY
+            self.ui.btn_reload.clicked.connect(self.load)
+            self.ui.btn_recheck.clicked.connect(self.check)
+            self.ui.btn_print.clicked.connect(self.__print)
 
             self.ui.input_url_sistema.textChanged.connect(self.save)
-            # self.ui.input_url_sistema.textChanged.connect(self.force_correct_url)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
 
             self.ui.select_loja.currentIndexChanged.connect(self.save)
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
             layout.addWidget(webview)
 
             # Load a URL into the QWebEngineView
-            url = urllib.parse.quote(f'file://{CONFIG["rootPTH"]}Comanda#30.pdf', safe=':/?&=')
+            url = urllib.parse.quote(f'file://{CONFIG["rootPTH"]}comanda.pdf', safe=':/?&=')
             # url = urllib.parse.quote(f'{CONFIG["sistema"]}/views/print/?id={30}', safe=':/?&=')
             self.log = f'Previewing - {url}'
             webview.setUrl(QUrl(url))
@@ -131,23 +131,24 @@ class MainWindow(QMainWindow):
 
         for pedido in queue.get('lista'):
             if int(pedido.get("delivery")) in CONFIG['printTypes']:
-                template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
-                _template = reverse_template_mapping.get(template, "Padrão")
-                self.log = f'#=> Imprimir {CONFIG["nCopies"]}x [{_template}], pedido Nº <span style="color: #0000FF;">{pedido.get("id")}</span> na {CONFIG["dPrinter"]}. <a href="{CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}" style="color: #1976d2;">Visualizar</a>'
+                self.__print(pedido)
 
-    def load(self):
-        if self.srv.running:
-            self.srv.stop()
+    def __print(self, pedido: dict | bool = False):
+        if pedido is False:
+            id_pedido = int(self.ui.input_id_pedido.toPlainText())
+            pedido = self.api.get_order_by_id(id_pedido)
 
-        load()
-        CONFIG['lojas'] = self.api.get_stores()
-        save()
+        if pedido:
+            id_pedido = int(pedido.get("id"))
+            template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+            _template = reverse_template_mapping.get(template, "Padrão")
 
-        self.ui.select_loja.clear()
-        self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+            self.log = f'#=> Imprimir {CONFIG["nCopies"]}x [{_template}], pedido Nº <span style="color: #0000FF;">{id_pedido}</span> na {CONFIG["dPrinter"]}. <a href="{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
-        if not self.srv.running:
-            self.srv.start()
+            # NEED CROSS-THREAD CALL
+            # self.srv.print_file(id_pedido, f'{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}')
+        else:
+            self.log = f'Erro ao imprimir [{id_pedido}], pedido não encontrado.'
 
     def save(self):
         CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
@@ -172,13 +173,27 @@ class MainWindow(QMainWindow):
 
         save()
 
+    def load(self):
+        if self.srv.running:
+            self.srv.stop()
+
+        load()
+        CONFIG['lojas'] = self.api.get_stores()
+        save()
+
+        self.ui.select_loja.clear()
+        self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+
+        if not self.srv.running:
+            self.srv.start()
+
     @property
     def log(self):
         return self.ui.log_box.toHtml()
 
     @log.setter
     def log(self, l: str):
-        print(l)
+        print(re.sub('<[^<]+?>', '', l))
 
         old = self.log
         _len = len(self.ui.log_box.toPlainText())
@@ -315,18 +330,6 @@ class MainWindow(QMainWindow):
         if result == QMessageBox.StandardButton.Ok:
             self.log = "OK button clicked"
             # alert.exit(0)
-
-    def force_correct_url(self):
-        current_text = self.ui.input_url_sistema.toPlainText()
-
-        if len(current_text):
-            if not current_text.startswith('http://'):
-                current_text = 'http://' + current_text
-
-            if current_text.endswith('/'):
-                current_text = current_text[:-1]
-
-            self.ui.input_url_sistema.setPlainText(current_text)
 
     def limit_orderid_length(self):
         max_length = 8
