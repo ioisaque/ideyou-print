@@ -1,12 +1,13 @@
 import sys
+import urllib
 from datetime import datetime
 import re
 
-from PyQt6.QtCore import Qt
-
 from init import CONFIG, load, save
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QApplication
+from PyQt6.QtCore import QUrl
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 from server import PrintServer
 
 template_mapping = {
@@ -52,11 +53,19 @@ class MainWindow(QMainWindow):
             else:
                 self.ui.select_printer.setCurrentIndex(0)
 
-            if not CONFIG['lojas']:
-                CONFIG['lojas'] = self.api.get_stores()
+            if not CONFIG['lojas'] and CONFIG['sistema']:
+                self.load()
+            else:
+                self.ui.select_loja.clear()
+                self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
-            self.ui.select_loja.clear()
-            self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+                # Try to find the printer on the list
+                index = self.ui.select_loja.findText(CONFIG['dStore'])
+
+                if index != -1:
+                    self.ui.select_loja.setCurrentIndex(index)
+                else:
+                    self.ui.select_loja.setCurrentIndex(0)
 
             self.ui.cb_print_balcao.setChecked(0 in CONFIG['printTypes'])
             self.ui.cb_print_delivery.setChecked(1 in CONFIG['printTypes'])
@@ -80,9 +89,11 @@ class MainWindow(QMainWindow):
                 self.ui.select_modelo_delivery.setCurrentIndex(0)
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
-            self.ui.btn_reload.clicked.connect(self.check)  # TESTING ONLY
+            self.ui.btn_reload.clicked.connect(self.load)  # TESTING ONLY
+            self.ui.btn_reload_2.clicked.connect(self.check)  # TESTING ONLY
 
             self.ui.input_url_sistema.textChanged.connect(self.save)
+            # self.ui.input_url_sistema.textChanged.connect(self.force_correct_url)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
 
             self.ui.select_loja.currentIndexChanged.connect(self.save)
@@ -96,6 +107,20 @@ class MainWindow(QMainWindow):
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
 
+            # Create a vertical layout for the central widget
+            layout = QVBoxLayout()
+            self.ui.preview_widget.setLayout(layout)
+
+            # Create a QWebEngineView widget to display web content
+            webview = QWebEngineView()
+            layout.addWidget(webview)
+
+            # Load a URL into the QWebEngineView
+            url = urllib.parse.quote(f'file://{CONFIG["rootPTH"]}Comanda#30.pdf', safe=':/?&=')
+            # url = urllib.parse.quote(f'{CONFIG["sistema"]}/views/print/?id={30}', safe=':/?&=')
+            self.log = f'Previewing - {url}'
+            webview.setUrl(QUrl(url))
+
         self.show()
         self.srv.start()
 
@@ -107,45 +132,45 @@ class MainWindow(QMainWindow):
         for pedido in queue.get('lista'):
             if int(pedido.get("delivery")) in CONFIG['printTypes']:
                 template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
-                self.log = f'#=> PRINT {CONFIG["nCopies"]} copies of {template} for order <a href="http://block.local/ideyou-delivery/?do=pedidos&amp;action=view&amp;id={pedido.get("id")}"><span style="color:#0000ff;">Pedido #{pedido.get("id")}</span></a> with {CONFIG["dPrinter"]}.'
+                _template = reverse_template_mapping.get(template, "Padrão")
+                self.log = f'#=> Imprimir {CONFIG["nCopies"]}x [{_template}], pedido Nº <span style="color: #0000FF;">{pedido.get("id")}</span> na {CONFIG["dPrinter"]}. <a href="{CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}" style="color: #1976d2;">Visualizar</a>'
 
     def load(self):
         if self.srv.running:
             self.srv.stop()
 
         load()
-
         CONFIG['lojas'] = self.api.get_stores()
+        save()
+
         self.ui.select_loja.clear()
         self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
         if not self.srv.running:
             self.srv.start()
 
-    def alert(self, title: str, message: str):
-        app = QApplication([])
+    def save(self):
+        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
+        CONFIG["dStore"] = self.ui.select_loja.currentText()
 
-        # Create a QMessageBox
-        alert = QMessageBox()
+        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
+        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
 
-        # Set the alert properties
-        alert.setWindowTitle(title)
-        alert.setText(message)
-        alert.setIcon(QMessageBox.Icon.Information)  # You can change the icon as needed
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
 
-        # Add buttons to the alert
-        alert.addButton(QMessageBox.StandardButton.Ok)
-        # You can add more buttons or customize their behavior if needed
+        CONFIG['printTypes'] = []
 
-        # Show the alert
-        result = alert.exec()
+        if self.ui.cb_print_balcao.isChecked():
+            CONFIG['printTypes'].append(0)
 
-        # Check the result (button clicked)
-        if result == QMessageBox.StandardButton.Ok:
-            print("OK button clicked")
+        if self.ui.cb_print_delivery.isChecked():
+            CONFIG['printTypes'].append(1)
 
-        # Run the application event loop
-        app.exec()
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+
+        save()
 
     @property
     def log(self):
@@ -153,8 +178,11 @@ class MainWindow(QMainWindow):
 
     @log.setter
     def log(self, l: str):
+        print(l)
+
         old = self.log
-        self.ui.log_box.setText(old + ('\n' if len(old) else '') + l)
+        _len = len(self.ui.log_box.toPlainText())
+        self.ui.log_box.setText(old + ('\n' if _len else '') + l)
 
     @property
     def last_checked(self):
@@ -163,7 +191,7 @@ class MainWindow(QMainWindow):
     @last_checked.setter
     def last_checked(self, count):
         current_time = datetime.now()
-        self.ui.last_checked.setText(current_time.strftime(f'Última checagem ás %H:%M:%S [{count} pedidos]'))
+        self.ui.last_checked.setText(current_time.strftime(f'Última checagem ás %H:%M:%S [{count} na fila]'))
 
     @property
     def nCopies(self):
@@ -187,11 +215,17 @@ class MainWindow(QMainWindow):
 
     @property
     def dStore(self):
-        return int(re.sub(r'[^0-9]', '', self.ui.select_loja.currentText()))
+        nome_loja = self.ui.select_loja.currentText()
+
+        for loja in CONFIG["lojas"]:
+            if loja["nome"] == nome_loja:
+                return int(loja["id"])
+
+        return 0
 
     @dStore.setter
     def dStore(self, value):
-        CONFIG["dStore"] = int(re.sub(r'[^0-9]', '', value))
+        CONFIG["dStore"] = value
 
         save()
 
@@ -261,28 +295,38 @@ class MainWindow(QMainWindow):
 
         save()
 
-    def save(self):
-        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
-        CONFIG["dStore"] = re.sub(r'[^0-9]', '', self.ui.select_loja.currentText()).lstrip('0')
+    def alert(self, title: str, message: str):
+        # Create a QMessageBox
+        alert = QMessageBox()
 
-        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
-        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
+        # Set the alert properties
+        alert.setWindowTitle(title)
+        alert.setText(message)
+        alert.setIcon(QMessageBox.Icon.Information)  # You can change the icon as needed
 
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+        # Add buttons to the alert
+        alert.addButton(QMessageBox.StandardButton.Ok)
+        # You can add more buttons or customize their behavior if needed
 
-        CONFIG['printTypes'] = []
+        # Show the alert
+        result = alert.exec()
 
-        if self.ui.cb_print_balcao.isChecked():
-            CONFIG['printTypes'].append(0)
+        # Check the result (button clicked)
+        if result == QMessageBox.StandardButton.Ok:
+            self.log = "OK button clicked"
+            # alert.exit(0)
 
-        if self.ui.cb_print_delivery.isChecked():
-            CONFIG['printTypes'].append(1)
+    def force_correct_url(self):
+        current_text = self.ui.input_url_sistema.toPlainText()
 
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+        if len(current_text):
+            if not current_text.startswith('http://'):
+                current_text = 'http://' + current_text
 
-        save()
+            if current_text.endswith('/'):
+                current_text = current_text[:-1]
+
+            self.ui.input_url_sistema.setPlainText(current_text)
 
     def limit_orderid_length(self):
         max_length = 8

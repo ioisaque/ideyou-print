@@ -46,7 +46,7 @@ background: #FFF;</string>
       <x>10</x>
       <y>10</y>
       <width>780</width>
-      <height>531</height>
+      <height>521</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -83,130 +83,13 @@ background: #FFF;</string>
      <attribute name="title">
       <string>Script</string>
      </attribute>
-     <widget class="QTableWidget" name="table_box">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>180</y>
-        <width>750</width>
-        <height>310</height>
-       </rect>
-      </property>
-      <property name="alternatingRowColors">
-       <bool>true</bool>
-      </property>
-      <property name="rowCount">
-       <number>1</number>
-      </property>
-      <property name="columnCount">
-       <number>2</number>
-      </property>
-      <attribute name="horizontalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="horizontalHeaderCascadingSectionResizes">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>170</number>
-      </attribute>
-      <attribute name="horizontalHeaderHighlightSections">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="horizontalHeaderMinimumSectionSize">
-       <number>25</number>
-      </attribute>
-      <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="horizontalHeaderStretchLastSection">
-       <bool>true</bool>
-      </attribute>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderCascadingSectionResizes">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderStretchLastSection">
-       <bool>false</bool>
-      </attribute>
-      <row>
-       <property name="text">
-        <string>1</string>
-       </property>
-      </row>
-      <column>
-       <property name="text">
-        <string>ID_PEDIDO</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>ACAO</string>
-       </property>
-      </column>
-      <item row="0" column="0">
-       <property name="text">
-        <string>000001</string>
-       </property>
-      </item>
-      <item row="0" column="1">
-       <property name="text">
-        <string>PRINT</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QLabel" name="img_logo">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>40</y>
-        <width>200</width>
-        <height>105</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>200</width>
-        <height>105</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>200</width>
-        <height>105</height>
-       </size>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="pixmap">
-       <pixmap>poweredby.png</pixmap>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
      <widget class="QGroupBox" name="gpb_main">
       <property name="geometry">
        <rect>
-        <x>249</x>
+        <x>275</x>
         <y>10</y>
-        <width>511</width>
-        <height>151</height>
+        <width>485</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -223,8 +106,8 @@ background: #FFF;</string>
         <rect>
          <x>100</x>
          <y>20</y>
-         <width>370</width>
-         <height>25</height>
+         <width>350</width>
+         <height>28</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -233,15 +116,8 @@ background: #FFF;</string>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>370</width>
-         <height>25</height>
-        </size>
-       </property>
        <property name="font">
         <font>
-         <pointsize>12</pointsize>
          <weight>75</weight>
          <bold>true</bold>
         </font>
@@ -268,7 +144,7 @@ background: #FFF;</string>
         <enum>Qt::ScrollBarAlwaysOff</enum>
        </property>
        <property name="placeholderText">
-        <string/>
+        <string>https://sistema.ideyou.com.br</string>
        </property>
       </widget>
       <widget class="QPushButton" name="btn_reload">
@@ -277,7 +153,7 @@ background: #FFF;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>470</x>
+         <x>450</x>
          <y>20</y>
          <width>32</width>
          <height>28</height>
@@ -324,10 +200,10 @@ background-color: transparent;</string>
       <widget class="QComboBox" name="select_loja">
        <property name="geometry">
         <rect>
-         <x>100</x>
-         <y>50</y>
+         <x>300</x>
+         <y>60</y>
          <width>150</width>
-         <height>25</height>
+         <height>28</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -335,18 +211,6 @@ background-color: transparent;</string>
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>150</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>150</width>
-         <height>25</height>
-        </size>
        </property>
        <property name="font">
         <font>
@@ -365,52 +229,69 @@ background-color: transparent;</string>
         <bool>false</bool>
        </property>
        <property name="styleSheet">
-        <string notr="true">font-weight: bold; color: #F00;</string>
+        <string notr="true">font-weight: bold; color: #FF0000;</string>
        </property>
        <property name="currentText">
-        <string/>
+        <string>LOJA 01</string>
        </property>
        <property name="frame">
         <bool>true</bool>
        </property>
+       <item>
+        <property name="text">
+         <string>LOJA 01</string>
+        </property>
+       </item>
       </widget>
       <widget class="QLabel" name="label_1">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>20</y>
-         <width>81</width>
-         <height>16</height>
+         <y>25</y>
+         <width>85</width>
+         <height>15</height>
         </rect>
        </property>
        <property name="text">
         <string>URL do sistema:</string>
        </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
       </widget>
       <widget class="QLabel" name="label_2">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>50</y>
-         <width>81</width>
-         <height>16</height>
+         <x>235</x>
+         <y>65</y>
+         <width>55</width>
+         <height>15</height>
         </rect>
        </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
        <property name="text">
-        <string>Sua loja atual:</string>
+        <string>Loja atual:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
       <widget class="QLabel" name="label_3">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>110</y>
-         <width>81</width>
-         <height>16</height>
+         <y>65</y>
+         <width>85</width>
+         <height>15</height>
         </rect>
        </property>
        <property name="text">
-        <string>ID Pedido</string>
+        <string>Imprimir ID:</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
       <widget class="QTextEdit" name="input_id_pedido">
@@ -420,9 +301,9 @@ background-color: transparent;</string>
        <property name="geometry">
         <rect>
          <x>100</x>
-         <y>110</y>
-         <width>111</width>
-         <height>25</height>
+         <y>60</y>
+         <width>90</width>
+         <height>28</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -441,7 +322,7 @@ background-color: transparent;</string>
         <cursorShape>IBeamCursor</cursorShape>
        </property>
        <property name="styleSheet">
-        <string notr="true">font-weight: bold; color: #1431f9;</string>
+        <string notr="true">font-weight: bold; color: #1976d2;</string>
        </property>
        <property name="inputMethodHints">
         <set>Qt::ImhNone</set>
@@ -465,8 +346,8 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>220</x>
-         <y>110</y>
+         <x>195</x>
+         <y>60</y>
          <width>32</width>
          <height>28</height>
         </rect>
@@ -509,14 +390,161 @@ background-color: transparent;</string>
         </size>
        </property>
       </widget>
+      <widget class="QPushButton" name="btn_reload_2">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>450</x>
+         <y>60</y>
+         <width>32</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>18</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border: none;
+border-radius: 15px;
+background-color: transparent;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>refresh.png</normaloff>refresh.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>28</width>
+         <height>28</height>
+        </size>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="preview_widget" native="true">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>260</width>
+        <height>370</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="gpb_main_2">
+      <property name="geometry">
+       <rect>
+        <x>275</x>
+        <y>113</y>
+        <width>485</width>
+        <height>370</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="title">
+       <string>Últimas atividades</string>
+      </property>
+      <widget class="QTextBrowser" name="log_box">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>465</width>
+         <height>320</height>
+        </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="cursor" stdset="0">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::NoContextMenu</enum>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font-weight: bold; color: #000;</string>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhNone</set>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAsNeeded</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+       <property name="html">
+        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="textInteractionFlags">
+        <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+       </property>
+       <property name="placeholderText">
+        <string/>
+       </property>
+      </widget>
       <widget class="QLabel" name="last_checked">
        <property name="geometry">
         <rect>
-         <x>260</x>
-         <y>120</y>
-         <width>241</width>
+         <x>10</x>
+         <y>340</y>
+         <width>465</width>
          <height>20</height>
         </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
@@ -531,98 +559,33 @@ background-color: transparent;</string>
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
-      <widget class="QLabel" name="gsv_label">
-       <property name="geometry">
-        <rect>
-         <x>260</x>
-         <y>100</y>
-         <width>241</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: #F00;</string>
-       </property>
-       <property name="text">
-        <string>GS não encontrado.</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
      </widget>
-     <widget class="QTextBrowser" name="log_box">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
+     <widget class="QLabel" name="img_logo_2">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>180</y>
-        <width>750</width>
-        <height>310</height>
+        <y>20</y>
+        <width>260</width>
+        <height>87</height>
        </rect>
       </property>
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>750</width>
-        <height>310</height>
-       </size>
+      <property name="text">
+       <string/>
       </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
+      <property name="pixmap">
+       <pixmap>logo.png</pixmap>
       </property>
-      <property name="cursor" stdset="0">
-       <cursorShape>PointingHandCursor</cursorShape>
-      </property>
-      <property name="contextMenuPolicy">
-       <enum>Qt::NoContextMenu</enum>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">font-weight: bold; color: #000;</string>
-      </property>
-      <property name="inputMethodHints">
-       <set>Qt::ImhNone</set>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Plain</enum>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAsNeeded</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="readOnly">
+      <property name="scaledContents">
        <bool>true</bool>
       </property>
-      <property name="html">
-       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:600; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-      <property name="textInteractionFlags">
-       <set>Qt::LinksAccessibleByMouse</set>
-      </property>
-      <property name="placeholderText">
-       <string/>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
     </widget>
@@ -1010,6 +973,28 @@ background-color: #d01c35;</string>
     </property>
     <property name="text">
      <string>PARAR</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gsv_label">
+    <property name="geometry">
+     <rect>
+      <x>540</x>
+      <y>8</y>
+      <width>250</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: #F00;</string>
+    </property>
+    <property name="text">
+     <string>GS não encontrado.</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
     </property>
    </widget>
   </widget>

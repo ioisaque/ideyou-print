@@ -3,7 +3,7 @@ import json
 import socket
 import subprocess
 
-from PyQt6.QtCore import QThread, QMetaObject, Qt, Q_ARG
+from PyQt6.QtCore import QThread
 from waitress import serve
 
 from api import IdeYouApi

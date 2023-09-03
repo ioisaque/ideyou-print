@@ -15,12 +15,18 @@ class IdeYouApi(QThread):
         self.ui = ui
         self.__retry_amount = 3
         self.__connection_retry_timeout = 10
-        self.__base_url: str = f'{CONFIG["sistema"]}/webservices'
+
+    @property
+    def base_url(self) -> str:
+        if any(addr in self.ui.sistema for addr in ["192.168", "block", "local", "127.0.0.1"]):
+            return f'{self.ui.sistema}/webservices'
+        else:
+            return f'{self.ui.sistema if self.ui.sistema.startswith("https") else self.ui.sistema.replace("http", "https")}/webservices'
 
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
 
-        if CONFIG["sistema"] == '':
-            return self.ui.alert('Fonte indefinida', 'Sistema não definido!')
+        if self.base_url == '':
+            return self.ui.alert('Erro 400', 'Caminho do sistema indefinido, informe a\nURL do seu sistema para utilizar o serviço.')
 
         if headers is None:
             headers = {}
@@ -28,7 +34,9 @@ class IdeYouApi(QThread):
         for i in range(self.__retry_amount):
             try:
                 response = requests.request(method=method, url=url, json=payload, headers=headers)
-                return response.json()
+                data = response.json()
+
+                return data
             except Exception as e:
                 logging.error(f'Impossible to get the response from server: {e.__repr__()}')
                 logging.error(f'Waiting {self.__connection_retry_timeout} - for retry')
@@ -37,33 +45,23 @@ class IdeYouApi(QThread):
                 if i > self.__retry_amount:
                     break
 
-    def get_stores(self) -> dict:
-        url = f"{self.__base_url}/lojas/"
+    def get_stores(self) -> list:
+        url = f"{self.base_url}/lojas/"
         payload: dict = {
             "listar": "todos"
         }
 
-        print('Loading stores...')
-        lista = self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+        self.ui.log = 'Loading stores...'
+        response = self.__request(payload, url, {"User-Agent": "Postman"})
 
-        # [(loja.get('nome'), loja.get('id')) for loja in lista]
-
-        return lista
+        return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
 
     def get_wating_orders(self, id_loja: int = 0) -> list:
-        url = f"{self.__base_url}/pedidos/"
+        url = f"{self.base_url}/pedidos/"
         payload: dict = {
             "listar": "queue",
             "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
         }
 
-        print('Checking orders...')
+        self.ui.log = 'Checking orders...'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
-
-    @property
-    def base_url(self):
-        return self.__base_url
-
-    @base_url.setter
-    def base_url(self, value):
-        self.__base_url = value

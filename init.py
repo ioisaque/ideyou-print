@@ -33,7 +33,7 @@ def load():
     CONFIG["nCopies"] = 1
     CONFIG["dPrinter"] = ""
     CONFIG['lojas'] = ['UNKNOW']
-    CONFIG['sistema'] = "https://ideyou.com.br/burgerflix/sistema"
+    CONFIG['sistema'] = "http://ideyou.com.br/burgerflix/sistema"
 
     CONFIG['deliveryTemplate'] = "bundle"
     CONFIG['balcaoTemplate'] = "comanda"
@@ -90,5 +90,11 @@ def load():
     else:
         with open(ideyou_config, "w") as jsonfile:
             json.dump({key: CONFIG[key] for key in S_CONFIG}, jsonfile)
+
+    if not CONFIG['sistema'].startswith('http'):
+        CONFIG['sistema'] = 'http://' + CONFIG['sistema']
+
+    if CONFIG['sistema'].endswith('/'):
+        CONFIG['sistema'] = CONFIG['sistema'][:-1]
 
     return CONFIG
