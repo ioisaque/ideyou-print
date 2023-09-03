@@ -2,6 +2,8 @@ import sys
 from datetime import datetime
 import re
 
+from PyQt6.QtCore import Qt
+
 from init import CONFIG, load, save
 from PyQt6 import uic
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QApplication
@@ -78,7 +80,7 @@ class MainWindow(QMainWindow):
                 self.ui.select_modelo_delivery.setCurrentIndex(0)
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
-            self.ui.btn_reload.clicked.connect(self.load)
+            self.ui.btn_reload.clicked.connect(self.check)  # TESTING ONLY
 
             self.ui.input_url_sistema.textChanged.connect(self.save)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
@@ -92,9 +94,22 @@ class MainWindow(QMainWindow):
             self.ui.cb_print_balcao.stateChanged.connect(self.save)
             self.ui.cb_print_delivery.stateChanged.connect(self.save)
 
-        self.show()
+            self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
 
-    def load(self, first: bool = False):
+        self.show()
+        self.srv.start()
+
+    def check(self):
+        queue = self.api.get_wating_orders()
+
+        self.last_checked = str(queue.get("waiting"))
+
+        for pedido in queue.get('lista'):
+            if int(pedido.get("delivery")) in CONFIG['printTypes']:
+                template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+                self.log = f'#=> PRINT {CONFIG["nCopies"]} copies of {template} for order <a href="http://block.local/ideyou-delivery/?do=pedidos&amp;action=view&amp;id={pedido.get("id")}"><span style="color:#0000ff;">Pedido #{pedido.get("id")}</span></a> with {CONFIG["dPrinter"]}.'
+
+    def load(self):
         if self.srv.running:
             self.srv.stop()
 
@@ -106,34 +121,6 @@ class MainWindow(QMainWindow):
 
         if not self.srv.running:
             self.srv.start()
-
-    def save(self):
-        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
-        CONFIG["dStore"] = re.sub(r'[^0-9]', '', self.ui.select_loja.currentText()).lstrip('0')
-
-        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
-        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
-
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
-
-        CONFIG['printTypes'] = []
-
-        if self.ui.cb_print_balcao.isChecked():
-            CONFIG['printTypes'].append(0)
-
-        if self.ui.cb_print_delivery.isChecked():
-            CONFIG['printTypes'].append(1)
-
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
-
-        save()
-
-    def log(self, l: str):
-        print(l)
-        # old = self.ui.log_box.toPlainText()
-        # self.ui.log_box.setText(old + ('\n' if len(old) else '') + l)3
 
     def alert(self, title: str, message: str):
         app = QApplication([])
@@ -159,6 +146,15 @@ class MainWindow(QMainWindow):
 
         # Run the application event loop
         app.exec()
+
+    @property
+    def log(self):
+        return self.ui.log_box.toHtml()
+
+    @log.setter
+    def log(self, l: str):
+        old = self.log
+        self.ui.log_box.setText(old + ('\n' if len(old) else '') + l)
 
     @property
     def last_checked(self):
@@ -262,6 +258,29 @@ class MainWindow(QMainWindow):
     @deliveryTemplate.setter
     def deliveryTemplate(self, value):
         CONFIG["deliveryTemplate"] = template_mapping.get(value, "")
+
+        save()
+
+    def save(self):
+        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
+        CONFIG["dStore"] = re.sub(r'[^0-9]', '', self.ui.select_loja.currentText()).lstrip('0')
+
+        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
+        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
+
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+
+        CONFIG['printTypes'] = []
+
+        if self.ui.cb_print_balcao.isChecked():
+            CONFIG['printTypes'].append(0)
+
+        if self.ui.cb_print_delivery.isChecked():
+            CONFIG['printTypes'].append(1)
+
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
 
         save()
 

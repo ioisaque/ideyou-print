@@ -3,19 +3,13 @@ import json
 import socket
 import subprocess
 
-import requests
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, QMetaObject, Qt, Q_ARG
 from waitress import serve
 
 from api import IdeYouApi
 from init import CONFIG
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
-
-template_mapping = {
-    "0": "balcaoTemplate",
-    "1": "deliveryTemplate"
-}
 
 
 class PrintServer(QThread):
@@ -62,17 +56,6 @@ class PrintServer(QThread):
 
         self.__log(f'PING received from {ip} on {client}.')
 
-        # PRINT FROM QUEUE EXAMPLE:
-        id_loja = self.ui.dStore
-        queue = self.api.get_wating_orders(id_loja)
-
-        self.ui.last_checked = queue.get("waiting")
-
-        for pedido in queue.get('lista'):
-            if int(pedido.get("delivery")) in CONFIG['printTypes']:
-                template = CONFIG[template_mapping.get(pedido.get("delivery"), "")]
-                self.__log(f'Print {CONFIG["nCopies"]} copies of: {CONFIG["sistema"]}/views/print/?id={pedido.get("id")}&template={template}')
-
         response = {'name': self.host, 'ip': self.ipaddr}
         return self.__create_response(response)
 
@@ -92,14 +75,18 @@ class PrintServer(QThread):
         else:
             response = {
                 'message': 'Pedido recebido para impressão!', 'type': 'success'}
+
             self.__log(f'Pedido {p.get("id")} enviado para {self.ui.dPrinter()}.')
+
+            # f'{CONFIG["sistema"]}/views/print/?id={id_pedido}&template={template}'
+
             self.__print_file(p.get('id'), p.get('full_url'))
 
         return self.__create_response(response)
 
     def __log(self, message):
         print(message)
-        # self.ui.log(message)
+        # self.ui.log = message
         # QMetaObject.invokeMethod(self.ui, 'log', Qt.ConnectionType.QueuedConnection, Q_ARG(str, message))
 
     def print_file(self, id: int, online_path: str):

@@ -50,11 +50,11 @@ class IdeYouApi(QThread):
 
         return lista
 
-    def get_wating_orders(self, id_loja: int = 1) -> list:
+    def get_wating_orders(self, id_loja: int = 0) -> list:
         url = f"{self.__base_url}/pedidos/"
         payload: dict = {
             "listar": "queue",
-            "id_loja": id_loja
+            "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
         }
 
         print('Checking orders...')
