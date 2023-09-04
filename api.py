@@ -2,10 +2,9 @@ import logging
 import os
 import re
 import subprocess
-
-import requests
 from time import sleep
 
+import requests
 from PyQt6.QtCore import QThread
 
 from init import CONFIG, reverse_template_mapping

@@ -1,8 +1,9 @@
 import sys
+
 from PyQt6 import QtWidgets
+
 from init import load
 from window import MainWindow
-
 
 if __name__ == '__main__':
     load()

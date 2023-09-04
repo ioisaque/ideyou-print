@@ -1,15 +1,12 @@
-import os
 import json
 import socket
-import subprocess
 
 from PyQt6.QtCore import QThread
+from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
 from waitress import serve
 
 from api import IdeYouApi
-from init import CONFIG
-from flask import Flask, request, jsonify
-from flask_cors import CORS, cross_origin
 
 
 class PrintServer(QThread):

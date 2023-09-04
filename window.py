@@ -3,19 +3,17 @@ import sys
 import urllib
 from datetime import datetime
 
+from PyQt6 import uic
+from PyQt6.QtCore import QUrl, Qt, QEvent, QTimer
 from PyQt6.QtGui import QDesktopServices, QMovie
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-
-from server import PrintServer
-from init import CONFIG, load, save, reverse_template_mapping, template_mapping
-
-from PyQt6 import uic
-from PyQt6.QtCore import QUrl, Qt, QEvent, QTimer
 from PyQt6.QtPdfWidgets import QPdfView
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit, QFileDialog, QLabel, \
-    QApplication
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QApplication
+
+from init import CONFIG, load, save, reverse_template_mapping, template_mapping
+from server import PrintServer
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
