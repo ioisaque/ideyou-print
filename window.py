@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
             self.ui.setupUi(self)
 
             # Create a QMovie instance and set the animated GIF
-            movie = QMovie("load-bars.gif")
+            movie = QMovie(assets_path + "load-bars.gif")
             self.ui.loading.setMovie(movie)
 
             # Start playing the animated GIF
@@ -138,7 +138,7 @@ class MainWindow(QMainWindow):
         # Set the notification sound
         self.sound_effect = QSoundEffect()
         self.sound_effect.setLoopCount(0)
-        self.sound_effect.setSource(QUrl.fromLocalFile("slotmachine.wav"))
+        self.sound_effect.setSource(QUrl.fromLocalFile(assets_path + "slotmachine.wav"))
 
     def check(self, reset: bool = False):
         self.ui.loading.show()

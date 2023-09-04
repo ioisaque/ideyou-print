@@ -35,10 +35,10 @@ def load():
     global CONFIG
     global S_CONFIG
 
-    CONFIG["dStore"] = 1
     CONFIG["nCopies"] = 1
     CONFIG["dPrinter"] = ""
-    CONFIG['lojas'] = ['UNKNOW']
+    CONFIG["dStore"] = "N/A"
+    CONFIG['lojas'] = [{"id": 0, "nome": "N/A"}]
     CONFIG['sistema'] = "http://ideyou.com.br/burgerflix/sistema"
 
     CONFIG['deliveryTemplate'] = "bundle"
