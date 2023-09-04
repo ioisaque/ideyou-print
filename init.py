@@ -46,6 +46,8 @@ def load():
     CONFIG['printTypes'] = [0, 1]
     CONFIG['printers'] = []
 
+    CONFIG['gslink'] = "https://cdn.ideyou.com.br/uploads/ghostscript/gs1000w32.exe"
+
     CONFIG['isMacOS'] = str(sys.platform).find('win')
 
     if CONFIG['isMacOS']:  # macOS

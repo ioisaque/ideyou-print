@@ -95,26 +95,32 @@ background: #FFF;</string>
     <property name="title">
      <string>GhostScript não encontrado!</string>
     </property>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="label_1">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>25</y>
-       <width>310</width>
-       <height>15</height>
+       <x>5</x>
+       <y>20</y>
+       <width>320</width>
+       <height>20</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
      <property name="styleSheet">
-      <string notr="true">color: #F00;</string>
+      <string notr="true">color: #F00; font-weight: bold;</string>
      </property>
      <property name="text">
-      <string>Para utilizar este programa, é obrigatório ter o GhostScript.</string>
+      <string>Para usar este recurso, é necessário o GhostScript.</string>
      </property>
      <property name="textFormat">
       <enum>Qt::AutoText</enum>
      </property>
      <property name="alignment">
-      <set>Qt::AlignHCenter|Qt::AlignTop</set>
+      <set>Qt::AlignCenter</set>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -130,10 +136,15 @@ background: #FFF;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>50</y>
+       <y>45</y>
        <width>310</width>
-       <height>40</height>
+       <height>70</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+      </font>
      </property>
      <property name="styleSheet">
       <string notr="true"/>
@@ -157,18 +168,18 @@ background: #FFF;</string>
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="btn_get_gs">
      <property name="geometry">
       <rect>
-       <x>65</x>
-       <y>105</y>
-       <width>200</width>
+       <x>20</x>
+       <y>123</y>
+       <width>290</width>
        <height>35</height>
       </rect>
      </property>
      <property name="font">
       <font>
-       <pointsize>9</pointsize>
+       <pointsize>-1</pointsize>
        <weight>75</weight>
        <bold>true</bold>
       </font>
@@ -176,8 +187,20 @@ background: #FFF;</string>
      <property name="cursor">
       <cursorShape>PointingHandCursor</cursorShape>
      </property>
+     <property name="styleSheet">
+      <string notr="true">color: #FFF;
+font-size: 15px;
+font-weight: bold;
+text-transform: uppercase;
+
+border: none;
+border-radius: 10px;
+border-bottom-left-radius: 0px;
+border-bottom-right-radius: 0px;
+background-color: #33cc66;</string>
+     </property>
      <property name="text">
-      <string>BAIXAR GHOSTSCRIPT</string>
+      <string>BAIXAR O GHOSTSCRIPT</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>

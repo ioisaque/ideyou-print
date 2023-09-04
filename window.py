@@ -3,6 +3,8 @@ import sys
 import urllib
 from datetime import datetime
 
+from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtNetwork import QNetworkRequest, QNetworkAccessManager
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
@@ -12,7 +14,7 @@ from init import CONFIG, load, save, reverse_template_mapping, template_mapping
 from PyQt6 import uic
 from PyQt6.QtCore import QUrl, Qt, QEvent
 from PyQt6.QtPdfWidgets import QPdfView
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit, QFileDialog
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -20,20 +22,20 @@ if hasattr(sys, '_MEIPASS'):
 else:
     assets_path = 'assets/'
 
-MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'main.ui')
-
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.ui = MainViewUi()
-        self.ui.setupUi(self)
-
         self.srv = PrintServer(self)
         self.api = self.srv.api
 
-        if CONFIG["gsVersion"]:
+        if not CONFIG["gsVersion"]:
+            MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'main.ui')
+
+            self.ui = MainViewUi()
+            self.ui.setupUi(self)
+
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
 
@@ -106,9 +108,16 @@ class MainWindow(QMainWindow):
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
 
+            self.srv.start()
+            self.preview(f'{self.api.base_url}/profile.php')
+        else:
+            MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'gs_not_found.ui')
+
+            self.ui = MainViewUi()
+            self.ui.setupUi(self)
+            self.ui.btn_get_gs.clicked.connect(self.downloadGS)
+
         self.show()
-        self.srv.start()
-        self.preview(f'{self.api.base_url}/profile.php')
 
     def check(self):
         queue = self.api.get_wating_orders()
@@ -320,26 +329,36 @@ class MainWindow(QMainWindow):
         save()
 
     def alert(self, title: str, message: str):
-        # Create a QMessageBox
-        alert = QMessageBox()
+        QMessageBox.information(self, title, message)
 
-        # Set the alert properties
-        alert.setWindowTitle(title)
-        alert.setText(message)
-        alert.setWindowIcon(self.windowIcon())
-        alert.setIcon(QMessageBox.Icon.Information)  # You can change the icon as needed
+    def downloadGS(self):
+        file_url = QUrl(CONFIG['gslink'])
 
-        # Add buttons to the alert
-        alert.addButton(QMessageBox.StandardButton.Ok)
-        # You can add more buttons or customize their behavior if needed
+        QDesktopServices.openUrl(file_url)
 
-        # Show the alert
-        result = alert.exec()
+        self.close()
 
-        # Check the result (button clicked)
-        if result == QMessageBox.StandardButton.Ok:
-            print("OK button clicked")
-            # alert.exit(0)
+        # # Prompt the user to choose a location to save the file
+        # file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "ghostscript.exe", "All Files (*)")
+        #
+        # if file_path:
+        #     # Create a QNetworkRequest to request the file
+        #     request = QNetworkRequest(file_url)
+        #
+        #     # Create a QNetworkAccessManager to handle the download
+        #     manager = QNetworkAccessManager(self)
+        #
+        #     # Handle the download progress and save the file
+        #     reply = manager.get(request)
+        #
+        #     def onReadyRead():
+        #         data = reply.readAll()
+        #         with open(file_path, "wb") as file:
+        #             file.write(data)
+        #         reply.deleteLater()
+        #         self.alert("Download Realizado", "O arquivo foi salvo no caminho informado!")
+        #
+        #     reply.finished.connect(onReadyRead)
 
     def limit_orderid_length(self):
         max_length = 8
