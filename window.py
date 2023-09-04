@@ -3,8 +3,8 @@ import sys
 import urllib
 from datetime import datetime
 
-from PyQt6.QtGui import QDesktopServices
-from PyQt6.QtNetwork import QNetworkRequest, QNetworkAccessManager
+from PyQt6.QtGui import QDesktopServices, QMovie
+from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
@@ -14,7 +14,8 @@ from init import CONFIG, load, save, reverse_template_mapping, template_mapping
 from PyQt6 import uic
 from PyQt6.QtCore import QUrl, Qt, QEvent, QTimer
 from PyQt6.QtPdfWidgets import QPdfView
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit, QFileDialog
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit, QFileDialog, QLabel, \
+    QApplication
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -27,6 +28,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.check_interval = 60000
+
         self.srv = PrintServer(self)
         self.api = self.srv.api
 
@@ -36,8 +39,12 @@ class MainWindow(QMainWindow):
             self.ui = MainViewUi()
             self.ui.setupUi(self)
 
-            self.ui.progress_bar.setValue(0)
-            self.ui.progress_bar.hide()
+            # Create a QMovie instance and set the animated GIF
+            movie = QMovie("load-bars.gif")
+            self.ui.loading.setMovie(movie)
+
+            # Start playing the animated GIF
+            movie.start()
 
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
@@ -92,7 +99,8 @@ class MainWindow(QMainWindow):
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
             self.ui.btn_reload.clicked.connect(self.load)
-            self.ui.btn_recheck.clicked.connect(self.check)
+            self.ui.btn_recheck.clicked.connect(lambda: self.check(True))
+
             self.ui.btn_print.clicked.connect(self.__print)
             self.ui.btn_cleanup.clicked.connect(self.api.clean_up_files)
 
@@ -113,6 +121,13 @@ class MainWindow(QMainWindow):
 
             self.srv.start()
             self.preview(f'{self.api.base_url}/profile.php')
+
+            self.ui.loading.hide()
+
+            # Create a QTimer to periodically trigger the check function
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.check)
+            self.timer.start(self.check_interval)  # Trigger every 60,000 milliseconds (1 minute)
         else:
             MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'gs_not_found.ui')
 
@@ -122,33 +137,46 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-    def updateProgressBar(self):
-        current_value = self.ui.progress_bar.value()
-        new_value = current_value + 1
-        if new_value <= 100:
-            self.ui.progress_bar.show()
-            self.ui.progress_bar.setValue(new_value)
-        else:
-            self.ui.progress_bar.hide()
+        # Set the notification sound
+        self.sound_effect = QSoundEffect()
+        self.sound_effect.setLoopCount(0)
+        self.sound_effect.setSource(QUrl.fromLocalFile("slotmachine.wav"))
+
+    def check(self, reset: bool = False):
+        self.ui.loading.show()
+        if reset:
             self.timer.stop()
 
-    def check(self):
-        self.ui.progress_bar.show()
         queue = self.api.get_wating_orders()
 
         self.last_checked = str(queue.get("waiting"))
 
         for pedido in queue.get('lista'):
             if int(pedido.get("delivery")) in CONFIG['printTypes']:
-                self.__print(pedido)
+                if int(pedido.get("printed")) == 0:
+                    self.__print(pedido)
+                else:
+                    self.log = f'<span style="color: #FF0000;">#=> PEDIDO #{pedido.get("id")} AGUARDANDO APROVAÇÃO!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+
+        if queue.get("waiting"):
+            # Play the sound effect
+            self.sound_effect.play()
+
+            # Wait for the sound effect to finish playing
+            while self.sound_effect.isPlaying():
+                QApplication.processEvents()
+
+        if reset:
+            self.timer.start(self.check_interval)
 
     def __print(self, pedido: dict | bool = False):
+        self.ui.loading.show()
+
         if pedido is False:
             id_pedido = int(self.ui.input_id_pedido.toPlainText())
             pedido = self.api.get_order_by_id(id_pedido)
 
         if pedido:
-            # NEED CROSS-THREAD CALL
             self.api.print_order(pedido)
         else:
             self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
@@ -177,7 +205,7 @@ class MainWindow(QMainWindow):
         save()
 
     def load(self):
-        self.ui.progress_bar.show()
+        self.ui.loading.show()
 
         if self.srv.running:
             self.srv.stop()
@@ -193,6 +221,8 @@ class MainWindow(QMainWindow):
 
         if not self.srv.running:
             self.srv.start()
+
+        self.ui.loading.hide()
 
     def preview(self, path_or_addr):
         if 'http' in path_or_addr:
@@ -230,8 +260,7 @@ class MainWindow(QMainWindow):
         print(re.sub('<[^<]+?>', '', l))
 
         old = self.log
-        _len = len(self.ui.log_box.toPlainText())
-        self.ui.log_box.setText((old + '\n' if _len > 0 else '') + l)
+        self.ui.log_box.setText(f'<p style="margin: 0 !important;">{l}</p>{old}')
 
     @property
     def last_checked(self):
@@ -345,7 +374,10 @@ class MainWindow(QMainWindow):
         save()
 
     def alert(self, title: str, message: str):
+        self.ui.loading.show()
         QMessageBox.information(self, title, message)
+        self.ui.loading.hide()
+
 
     def downloadGS(self):
         file_url = QUrl(CONFIG['gslink'])
