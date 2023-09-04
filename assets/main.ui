@@ -175,6 +175,9 @@ background: #FFF;</string>
        <property name="cursor">
         <cursorShape>PointingHandCursor</cursorShape>
        </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
@@ -188,7 +191,7 @@ background-color: transparent;</string>
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>refresh.png</normaloff>refresh.png</iconset>
+         <normaloff>cloud_link.png</normaloff>cloud_link.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -431,7 +434,7 @@ background-color: transparent;</string>
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>refresh.png</normaloff>refresh.png</iconset>
+         <normaloff>queue_check.png</normaloff>queue_check.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -440,16 +443,6 @@ background-color: transparent;</string>
         </size>
        </property>
       </widget>
-     </widget>
-     <widget class="QWidget" name="preview_widget" native="true">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>110</y>
-        <width>330</width>
-        <height>380</height>
-       </rect>
-      </property>
      </widget>
      <widget class="QGroupBox" name="gpb_main_2">
       <property name="geometry">
@@ -560,13 +553,13 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </widget>
-     <widget class="QLabel" name="img_logo_2">
+     <widget class="QLabel" name="img_logo">
       <property name="geometry">
        <rect>
-        <x>35</x>
-        <y>20</y>
-        <width>260</width>
-        <height>87</height>
+        <x>15</x>
+        <y>10</y>
+        <width>300</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -587,6 +580,38 @@ p, li { white-space: pre-wrap; }
       <property name="alignment">
        <set>Qt::AlignCenter</set>
       </property>
+     </widget>
+     <widget class="QScrollArea" name="preview_area">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>120</y>
+        <width>310</width>
+        <height>362</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background: #FFF;</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Box</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>306</width>
+         <height>358</height>
+        </rect>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="tab2">

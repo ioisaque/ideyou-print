@@ -76,7 +76,7 @@ class IdeYouApi(QThread):
             "listar": "todos"
         }
 
-        self.ui.log = 'Buscando listagem de lojas...'
+        self.ui.log = 'Buscando lojas...'
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
@@ -141,6 +141,6 @@ class IdeYouApi(QThread):
             try:
                 os.remove(file_path)
             except Exception as e:
-                self.ui.log = f"AVISO: Erro ao tentar apagar arquivo temporário: {file_path}. Error: {str(e)}"
-            finally:
-                self.ui.alert('Sucesso!', 'Limpeza de arquivos efetuada.')
+                self.ui.log = f'<span style="color: #f77b36;">ERRO ao apagar comanda/recibo: {str(e)}</span>'
+
+        self.ui.alert('Pronto!', 'Processo de limpeza de arquivos temporários realizado.')

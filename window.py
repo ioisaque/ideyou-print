@@ -1,17 +1,18 @@
+import re
 import sys
 import urllib
 from datetime import datetime
-import re
 
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
-from init import CONFIG, load, save, reverse_template_mapping, template_mapping
-from PyQt6 import uic
-from PyQt6.QtCore import QUrl
-from PyQt6.QtPdfWidgets import QPdfView
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea
 from server import PrintServer
+from init import CONFIG, load, save, reverse_template_mapping, template_mapping
+
+from PyQt6 import uic
+from PyQt6.QtCore import QUrl, Qt, QEvent
+from PyQt6.QtPdfWidgets import QPdfView
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -103,9 +104,11 @@ class MainWindow(QMainWindow):
             self.ui.cb_print_delivery.stateChanged.connect(self.save)
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
+            self.ui.input_id_pedido.installEventFilter(self)
 
         self.show()
         self.srv.start()
+        self.preview(f'{self.api.base_url}/profile.php')
 
     def check(self):
         queue = self.api.get_wating_orders()
@@ -161,28 +164,23 @@ class MainWindow(QMainWindow):
         self.ui.select_loja.clear()
         self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
+        self.preview(f'{self.api.base_url}/profile.php')
+
         if not self.srv.running:
             self.srv.start()
 
     def preview(self, path_or_addr):
-        self.log = f'Previewing - {path_or_addr}'
-
-        # Check if there's an existing layout and remove it if present
-        # if self.ui.preview_widget.layout():
-        #     self.ui.preview_widget.clear()
-
         if 'http' in path_or_addr:
-            # Create a vertical layout for the central widget
-            layout = QVBoxLayout()
-
             # Create a QWebEngineView widget to display web content
             webview = QWebEngineView()
-            layout.addWidget(webview)
+            self.ui.preview_area.setWidget(webview)
 
             # Load a URL into the QWebEngineView
             url = urllib.parse.quote(path_or_addr, safe=':/?&=')
             webview.setUrl(QUrl.fromLocalFile(url) if 'file://' in url else QUrl(url))
         else:
+            self.log = f'Previewing - {path_or_addr}'
+
             # Create a QPdfView widget
             pdf_view = QPdfView(self)
 
@@ -196,16 +194,7 @@ class MainWindow(QMainWindow):
             pdf_view.setDocument(pdf_document)
 
             # Create a scroll area widget
-            scroll_area = QScrollArea()
-            scroll_area.setWidgetResizable(True)
-            scroll_area.setWidget(pdf_view)
-
-            # Create a layout and add the scroll area widget to it
-            layout = QVBoxLayout()
-            layout.addWidget(scroll_area)
-
-        # Set the layout for the preview widget
-        self.ui.preview_widget.setLayout(layout)
+            self.ui.preview_area.setWidget(pdf_view)
 
     @property
     def log(self):
@@ -337,6 +326,7 @@ class MainWindow(QMainWindow):
         # Set the alert properties
         alert.setWindowTitle(title)
         alert.setText(message)
+        alert.setWindowIcon(self.windowIcon())
         alert.setIcon(QMessageBox.Icon.Information)  # You can change the icon as needed
 
         # Add buttons to the alert
@@ -357,3 +347,15 @@ class MainWindow(QMainWindow):
 
         if len(current_text) > max_length:
             self.ui.input_id_pedido.setPlainText(current_text[:max_length])
+
+    def eventFilter(self, obj, event):
+        if obj == self.ui.input_id_pedido and event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+                id_pedido = int(self.ui.input_id_pedido.toPlainText())
+                try:
+                    pedido = self.api.get_order_by_id(id_pedido)
+                    self.api.download_order(pedido)
+                except Exception as e:
+                    self.log = f'Erro ao visualizar pedido [{id_pedido}]: {str(e)}.'
+                return True  # Event handled
+        return super().eventFilter(obj, event)
