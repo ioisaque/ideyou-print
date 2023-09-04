@@ -12,7 +12,7 @@ from server import PrintServer
 from init import CONFIG, load, save, reverse_template_mapping, template_mapping
 
 from PyQt6 import uic
-from PyQt6.QtCore import QUrl, Qt, QEvent
+from PyQt6.QtCore import QUrl, Qt, QEvent, QTimer
 from PyQt6.QtPdfWidgets import QPdfView
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QScrollArea, QTextEdit, QFileDialog
 
@@ -30,11 +30,14 @@ class MainWindow(QMainWindow):
         self.srv = PrintServer(self)
         self.api = self.srv.api
 
-        if not CONFIG["gsVersion"]:
+        if CONFIG["gsVersion"]:
             MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'main.ui')
 
             self.ui = MainViewUi()
             self.ui.setupUi(self)
+
+            self.ui.progress_bar.setValue(0)
+            self.ui.progress_bar.hide()
 
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
@@ -119,7 +122,18 @@ class MainWindow(QMainWindow):
 
         self.show()
 
+    def updateProgressBar(self):
+        current_value = self.ui.progress_bar.value()
+        new_value = current_value + 1
+        if new_value <= 100:
+            self.ui.progress_bar.show()
+            self.ui.progress_bar.setValue(new_value)
+        else:
+            self.ui.progress_bar.hide()
+            self.timer.stop()
+
     def check(self):
+        self.ui.progress_bar.show()
         queue = self.api.get_wating_orders()
 
         self.last_checked = str(queue.get("waiting"))
@@ -133,11 +147,11 @@ class MainWindow(QMainWindow):
             id_pedido = int(self.ui.input_id_pedido.toPlainText())
             pedido = self.api.get_order_by_id(id_pedido)
 
-        if len(pedido):
+        if pedido:
             # NEED CROSS-THREAD CALL
             self.api.print_order(pedido)
         else:
-            self.log = f'Erro ao imprimir [{id_pedido}], pedido não encontrado.'
+            self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
 
     def save(self):
         CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
@@ -163,6 +177,8 @@ class MainWindow(QMainWindow):
         save()
 
     def load(self):
+        self.ui.progress_bar.show()
+
         if self.srv.running:
             self.srv.stop()
 
@@ -188,7 +204,7 @@ class MainWindow(QMainWindow):
             url = urllib.parse.quote(path_or_addr, safe=':/?&=')
             webview.setUrl(QUrl.fromLocalFile(url) if 'file://' in url else QUrl(url))
         else:
-            self.log = f'Previewing - {path_or_addr}'
+            self.log = f'Pré-visualizando - {path_or_addr}'
 
             # Create a QPdfView widget
             pdf_view = QPdfView(self)
@@ -215,7 +231,7 @@ class MainWindow(QMainWindow):
 
         old = self.log
         _len = len(self.ui.log_box.toPlainText())
-        self.ui.log_box.setText(old + ('\n' if _len else '') + l)
+        self.ui.log_box.setText((old + '\n' if _len > 0 else '') + l)
 
     @property
     def last_checked(self):
@@ -375,6 +391,7 @@ class MainWindow(QMainWindow):
                     pedido = self.api.get_order_by_id(id_pedido)
                     self.api.download_order(pedido)
                 except Exception as e:
-                    self.log = f'Erro ao visualizar pedido [{id_pedido}]: {str(e)}.'
+                    # self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
+                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
                 return True  # Event handled
         return super().eventFilter(obj, event)
