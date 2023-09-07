@@ -105,7 +105,7 @@ class IdeYouApi(QThread):
 
         try:
             # self.ui.log = f'Baixando {file_name}'
-            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'], creationflags=subprocess.CREATE_NO_WINDOW)
             return file_name
         except Exception as error:
             self.ui.log = error
@@ -131,7 +131,7 @@ class IdeYouApi(QThread):
 
                 self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{id_pedido} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={id_pedido}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
-                subprocess.run(gs_command)
+                subprocess.run(gs_command, creationflags=subprocess.CREATE_NO_WINDOW)
         except Exception as error:
             self.ui.log = error
         finally:
