@@ -621,7 +621,7 @@ p, li { white-space: pre-wrap; }
      <widget class="QGroupBox" name="gpb_printqtd">
       <property name="geometry">
        <rect>
-        <x>390</x>
+        <x>405</x>
         <y>10</y>
         <width>370</width>
         <height>80</height>
@@ -745,7 +745,7 @@ p, li { white-space: pre-wrap; }
      <widget class="QGroupBox" name="gpb_print">
       <property name="geometry">
        <rect>
-        <x>390</x>
+        <x>405</x>
         <y>100</y>
         <width>370</width>
         <height>80</height>
@@ -961,7 +961,7 @@ p, li { white-space: pre-wrap; }
      <widget class="QGroupBox" name="gpb_maintenance">
       <property name="geometry">
        <rect>
-        <x>390</x>
+        <x>405</x>
         <y>190</y>
         <width>370</width>
         <height>80</height>
@@ -1034,6 +1034,47 @@ background-color: transparent;</string>
        </property>
        <property name="text">
         <string>Limpar arquivos temporários</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="gpb_misc">
+      <property name="geometry">
+       <rect>
+        <x>405</x>
+        <y>280</y>
+        <width>370</width>
+        <height>80</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="title">
+       <string>Outros</string>
+      </property>
+      <widget class="QCheckBox" name="cb_open_on_logon">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>40</y>
+         <width>161</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: none;</string>
+       </property>
+       <property name="text">
+        <string>Iniciar com o Computador</string>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
        </property>
       </widget>
      </widget>

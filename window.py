@@ -1,6 +1,8 @@
+import os
 import re
 import sys
 import urllib
+import winreg as reg
 from datetime import datetime
 
 from PyQt6 import uic
@@ -20,6 +22,27 @@ if hasattr(sys, '_MEIPASS'):
     assets_path = sys._MEIPASS + '/assets/'
 else:
     assets_path = 'assets/'
+
+
+def toggle_logon_behavior(value):
+    exe_name = "IdeYouPrint"
+    exe_path = os.path.join(os.getcwd(), f'{exe_name}.exe')
+    key = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+    if value:
+        try:
+            reg_key = reg.OpenKey(reg.HKEY_CURRENT_USER, key, 0, reg.KEY_SET_VALUE)
+            reg.SetValueEx(reg_key, exe_name, 0, reg.REG_SZ, exe_path)
+            reg.CloseKey(reg_key)
+        except Exception as e:
+            print(f"Error setting auto-run on startup: {e}")
+    else:
+        try:
+            reg_key = reg.OpenKey(reg.HKEY_CURRENT_USER, key, 0, reg.KEY_SET_VALUE)
+            reg.DeleteValue(reg_key, exe_name)
+            reg.CloseKey(reg_key)
+        except Exception as e:
+            print(f"Error removing auto-run on startup: {e}")
 
 
 class MainWindow(QMainWindow):
@@ -76,6 +99,7 @@ class MainWindow(QMainWindow):
 
             self.ui.cb_print_balcao.setChecked(0 in CONFIG['printTypes'])
             self.ui.cb_print_delivery.setChecked(1 in CONFIG['printTypes'])
+            self.ui.cb_open_on_logon.setChecked(CONFIG['openOnLogon'])
 
             # Try to find the template on the list
             template = reverse_template_mapping.get(CONFIG['balcaoTemplate'], "bundle")
@@ -113,6 +137,7 @@ class MainWindow(QMainWindow):
 
             self.ui.cb_print_balcao.stateChanged.connect(self.save)
             self.ui.cb_print_delivery.stateChanged.connect(self.save)
+            self.ui.cb_open_on_logon.stateChanged.connect(self.save)
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
@@ -203,7 +228,11 @@ class MainWindow(QMainWindow):
         CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
         CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
 
+        CONFIG['openOnLogon'] = self.ui.cb_open_on_logon.isChecked()
+
         save()
+
+        toggle_logon_behavior(CONFIG['openOnLogon'])
 
     def load(self):
         self.ui.loading.show()
@@ -357,6 +386,16 @@ class MainWindow(QMainWindow):
             CONFIG['printTypes'].append('1')
         else:
             CONFIG['printTypes'].remove('1')
+
+        save()
+
+    @property
+    def openOnLogon(self):
+        return self.ui.cb_open_on_logon.isChecked()
+
+    @openOnLogon.setter
+    def openOnLogon(self, value):
+        CONFIG["openOnLogon"] = value
 
         save()
 

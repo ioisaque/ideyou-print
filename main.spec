@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='IdeYou Print',
+    name='IdeYouPrint',
     debug=False,
     icon='assets/favicon.ico',
     bootloader_ignore_signals=False,

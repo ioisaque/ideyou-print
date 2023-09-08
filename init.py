@@ -1,8 +1,8 @@
-import json
 import os
-import subprocess
 import sys
+import json
 import tempfile
+import subprocess
 
 CONFIG = {}
 S_CONFIG = ["dStore",
@@ -12,7 +12,8 @@ S_CONFIG = ["dStore",
             'sistema',
             'deliveryTemplate',
             'balcaoTemplate',
-            'printTypes']
+            'printTypes',
+            'openOnLogon']
 
 template_mapping = {
     "Padrão": "bundle",
@@ -20,6 +21,7 @@ template_mapping = {
     "Apenas Recibo": "recibo"
 }
 reverse_template_mapping = {v: k for k, v in template_mapping.items()}
+
 
 def save():
     params = {}
@@ -41,6 +43,7 @@ def load():
     CONFIG['lojas'] = [{"id": 0, "nome": "N/A"}]
     CONFIG['sistema'] = "http://ideyou.com.br/burgerflix/sistema"
 
+    CONFIG["openOnLogon"] = 0
     CONFIG['deliveryTemplate'] = "bundle"
     CONFIG['balcaoTemplate'] = "comanda"
     CONFIG['printTypes'] = [0, 1]
