@@ -41,8 +41,8 @@ class MainWindow(QMainWindow):
             movie = QMovie(assets_path + "load-bars.gif")
             self.ui.loading.setMovie(movie)
 
-            # Start playing the animated GIF
             movie.start()
+            self.show()
 
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
@@ -120,8 +120,6 @@ class MainWindow(QMainWindow):
             self.srv.start()
             self.preview(f'{self.api.base_url}/profile.php')
 
-            self.ui.loading.hide()
-
             # Create a QTimer to periodically trigger the check function
             self.timer = QTimer(self)
             self.timer.timeout.connect(self.check)
@@ -131,9 +129,9 @@ class MainWindow(QMainWindow):
 
             self.ui = MainViewUi()
             self.ui.setupUi(self)
-            self.ui.btn_get_gs.clicked.connect(self.downloadGS)
+            self.show()
 
-        self.show()
+            self.ui.btn_get_gs.clicked.connect(self.downloadGS)
 
         # Set the notification sound
         self.sound_effect = QSoundEffect()
@@ -142,6 +140,8 @@ class MainWindow(QMainWindow):
 
     def check(self, reset: bool = False):
         self.ui.loading.show()
+        QApplication.processEvents()
+
         if reset:
             self.timer.stop()
 
@@ -167,8 +167,11 @@ class MainWindow(QMainWindow):
         if reset:
             self.timer.start(self.check_interval)
 
+        self.ui.loading.hide()
+
     def __print(self, pedido: dict | bool = False):
         self.ui.loading.show()
+        QApplication.processEvents()
 
         if pedido is False:
             id_pedido = int(self.ui.input_id_pedido.toPlainText())
@@ -204,6 +207,7 @@ class MainWindow(QMainWindow):
 
     def load(self):
         self.ui.loading.show()
+        QApplication.processEvents()
 
         if self.srv.running:
             self.srv.stop()
@@ -223,6 +227,9 @@ class MainWindow(QMainWindow):
         self.ui.loading.hide()
 
     def preview(self, path_or_addr):
+        self.ui.loading.show()
+        QApplication.processEvents()
+
         if 'http' in path_or_addr:
             # Create a QWebEngineView widget to display web content
             webview = QWebEngineView()
@@ -248,6 +255,8 @@ class MainWindow(QMainWindow):
 
             # Create a scroll area widget
             self.ui.preview_area.setWidget(pdf_view)
+
+        self.ui.loading.hide()
 
     @property
     def log(self):

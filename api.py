@@ -40,7 +40,6 @@ class IdeYouApi(QThread):
 
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
         data = []
-        self.ui.ui.loading.show()
 
         if self.ui.sistema == '':
             return self.ui.alert('Erro 400',
@@ -62,7 +61,6 @@ class IdeYouApi(QThread):
                 if i > self.__retry_amount:
                     break
             finally:
-                self.ui.ui.loading.hide()
                 return data
 
     def get_order_by_id(self, id_pedido: int = 0) -> list:
@@ -105,7 +103,8 @@ class IdeYouApi(QThread):
 
         try:
             # self.ui.log = f'Baixando {file_name}'
-            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'], creationflags=subprocess.CREATE_NO_WINDOW)
+            # os.popen(f'curl -o "{local_path}" "{online_path}&download"')
+            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
             return file_name
         except Exception as error:
             self.ui.log = error
@@ -114,7 +113,6 @@ class IdeYouApi(QThread):
             self.ui.preview(local_path)
 
     def print_order(self, pedido: dict):
-        self.ui.ui.loading.show()
         id_pedido = int(pedido.get('id'))
         template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
         _template = reverse_template_mapping.get(template, "Padrão")
@@ -131,12 +129,11 @@ class IdeYouApi(QThread):
 
                 self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{id_pedido} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={id_pedido}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
-                subprocess.run(gs_command, creationflags=subprocess.CREATE_NO_WINDOW)
+                subprocess.run(gs_command)
         except Exception as error:
             self.ui.log = error
-        finally:
+        # finally:
             # os.remove(local_path)
-            self.ui.ui.loading.hide()
 
     def clean_up_files(self):
 

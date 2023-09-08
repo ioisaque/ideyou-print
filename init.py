@@ -80,7 +80,7 @@ def load():
         CONFIG['rootPTH'] = f'C:/temp/'
 
     try:
-        CONFIG['gsVersion'] = subprocess.check_output([CONFIG['command'], '-v']).decode('utf-8')
+        CONFIG['gsVersion'] = os.popen(f'{CONFIG["command"]} -v').read()
         CONFIG['gsVersion'] = CONFIG['gsVersion'].split('\n')[0]
         CONFIG['gsVersion'] = CONFIG['gsVersion'].split('(')[0].strip()
 
