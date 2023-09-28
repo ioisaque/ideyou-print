@@ -2,10 +2,12 @@ import logging
 import os
 import re
 import subprocess
+import urllib
 from time import sleep
 
 import requests
 from PyQt6.QtCore import QThread
+from PyQt6.QtWidgets import QApplication
 
 from init import CONFIG, reverse_template_mapping
 
@@ -102,15 +104,25 @@ class IdeYouApi(QThread):
         online_path = f'{self.base_url}/views/print/?id={id_pedido}&template={template}'
 
         try:
+            file_size = 0
             # self.ui.log = f'Baixando {file_name}'
-            # os.popen(f'curl -o "{local_path}" "{online_path}&download"')
-            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+            os.popen(f'curl -o "{local_path}" "{online_path}&download"')
+            # subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+
+            while file_size < 5120:
+                sleep(0.1)
+                try:
+                    file_size = os.path.getsize(local_path)
+                except FileNotFoundError:
+                    sleep(0.1)
+
             return file_name
         except Exception as error:
             self.ui.log = error
             return 500
         finally:
             self.ui.preview(local_path)
+            QApplication.processEvents()
 
     def print_order(self, pedido: dict):
         id_pedido = int(pedido.get('id'))
@@ -129,7 +141,8 @@ class IdeYouApi(QThread):
 
                 self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{id_pedido} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={id_pedido}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
-                subprocess.run(gs_command)
+                os.popen(gs_command)
+                # subprocess.run(gs_command)
         except Exception as error:
             self.ui.log = error
         # finally:

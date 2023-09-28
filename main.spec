@@ -29,6 +29,8 @@ exe = EXE(
     a.datas,
     [],
     name='IdeYouPrint',
+    author='IdeYou',
+    author_email='desenvolvimento@ideyou.com.br',
     debug=False,
     icon='assets/favicon.ico',
     bootloader_ignore_signals=False,

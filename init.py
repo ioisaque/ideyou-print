@@ -82,6 +82,9 @@ def load():
         CONFIG['sDevice'] = 'mswinpr2'
         CONFIG['rootPTH'] = f'C:/temp/'
 
+        if not os.path.exists(CONFIG['rootPTH']):
+            os.makedirs(CONFIG['rootPTH'])
+
     try:
         CONFIG['gsVersion'] = os.popen(f'{CONFIG["command"]} -v').read()
         CONFIG['gsVersion'] = CONFIG['gsVersion'].split('\n')[0]
