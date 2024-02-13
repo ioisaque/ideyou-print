@@ -19,7 +19,7 @@ class IdeYouApi(QThread):
 
         self.ui = ui
         self.__retry_amount = 3
-        self.__connection_retry_timeout = 10
+        self.__connection_retry_timeout = 30
 
     @property
     def base_url(self) -> str:

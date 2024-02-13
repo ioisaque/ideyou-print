@@ -87,7 +87,12 @@ class MainWindow(QMainWindow):
                 self.load()
             else:
                 self.ui.select_loja.clear()
-                self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+
+                # Add items to ComboBox
+                for loja in CONFIG['lojas']:
+                    nome = loja.get('nome')
+                    id = loja.get('id')
+                    self.ui.select_loja.addItem(nome, id)
 
                 # Try to find the printer on the list
                 index = self.ui.select_loja.findText(CONFIG['dStore'])
@@ -209,7 +214,7 @@ class MainWindow(QMainWindow):
 
     def save(self):
         CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
-        CONFIG["dStore"] = self.ui.select_loja.currentText()
+        CONFIG["dStore"] = self.ui.select_loja.currentData()
 
         CONFIG["dPrinter"] = self.ui.select_printer.currentText()
         CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
