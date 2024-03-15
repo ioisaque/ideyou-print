@@ -6,15 +6,15 @@ import winreg as reg
 from datetime import datetime
 
 from PyQt6 import uic
-from PyQt6.QtCore import QUrl, Qt, QEvent, QTimer
+from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDesktopServices, QMovie
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtPdfWidgets import QPdfView
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox
 
-from init import CONFIG, load, save, reverse_template_mapping, template_mapping
+from init import CONFIG, load, reverse_template_mapping, save, template_mapping
 from server import PrintServer
 
 if hasattr(sys, '_MEIPASS'):
@@ -214,7 +214,7 @@ class MainWindow(QMainWindow):
 
     def save(self):
         CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
-        CONFIG["dStore"] = self.ui.select_loja.currentData()
+        CONFIG["dStore"] = self.dStore
 
         CONFIG["dPrinter"] = self.ui.select_printer.currentText()
         CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
@@ -334,13 +334,14 @@ class MainWindow(QMainWindow):
 
     @property
     def dStore(self):
-        nome_loja = self.ui.select_loja.currentText()
+        id_loja = 0
+        dLoja = self.ui.select_loja.currentText()
 
         for loja in CONFIG["lojas"]:
-            if loja["nome"] == nome_loja:
-                return int(loja["id"])
-
-        return 0
+            if dLoja == loja["nome"]:
+                id_loja = int(loja["id"])
+        
+        return str(id_loja)
 
     @dStore.setter
     def dStore(self, value):
