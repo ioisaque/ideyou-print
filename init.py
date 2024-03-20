@@ -39,9 +39,9 @@ def load():
 
     CONFIG["nCopies"] = 1
     CONFIG["dPrinter"] = ""
-    CONFIG["dStore"] = "N/A"
+    CONFIG["dStore"] = "0"
     CONFIG['lojas'] = [{"id": 0, "nome": "N/A"}]
-    CONFIG['sistema'] = "http://ideyou.com.br/burgerflix/sistema"
+    CONFIG['sistema'] = "http://sistema.ideyou.com.br"
 
     CONFIG["openOnLogon"] = 0
     CONFIG['deliveryTemplate'] = "bundle"
@@ -49,7 +49,7 @@ def load():
     CONFIG['printTypes'] = [0, 1]
     CONFIG['printers'] = []
 
-    CONFIG['gslink'] = "https://cdn.ideyou.com.br/uploads/ghostscript/gs1000w32.exe"
+    CONFIG['gslink'] = "https://cdn.ideyou.com.br/archive/ghostscript/gs1000w32.exe"
 
     CONFIG['isMacOS'] = str(sys.platform).find('win')
 

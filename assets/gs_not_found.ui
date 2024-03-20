@@ -26,7 +26,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>AutoPrint | Versão 1.0</string>
+   <string>IdeYouPrint | Versão 1.2</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -43,9 +43,9 @@ background: #FFF;</string>
    <widget class="QLabel" name="img_logo">
     <property name="geometry">
      <rect>
-      <x>55</x>
+      <x>76</x>
       <y>25</y>
-      <width>243</width>
+      <width>200</width>
       <height>105</height>
      </rect>
     </property>
@@ -57,13 +57,13 @@ background: #FFF;</string>
     </property>
     <property name="minimumSize">
      <size>
-      <width>243</width>
+      <width>200</width>
       <height>105</height>
      </size>
     </property>
     <property name="maximumSize">
      <size>
-      <width>243</width>
+      <width>200</width>
       <height>105</height>
      </size>
     </property>

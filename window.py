@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
                     self.ui.select_loja.addItem(nome, id)
 
                 # Try to find the printer on the list
-                index = self.ui.select_loja.findText(CONFIG['dStore'])
+                index = self.ui.select_loja.findData(CONFIG['dStore'])
 
                 if index != -1:
                     self.ui.select_loja.setCurrentIndex(index)
