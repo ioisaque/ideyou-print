@@ -19,13 +19,13 @@ class IdeYouApi(QThread):
 
         self.ui = ui
         self.__retry_amount = 3
-        self.__connection_retry_timeout = 30
+        self.__connection_retry_timeout = 5
 
     @property
     def base_url(self) -> str:
         base_url = f'{self.ui.sistema}' + ""
 
-        if any(addr in base_url for addr in ["192.168", "block", "local", "127.0.0.1"]):
+        if any(addr in base_url for addr in ["192.168", "block.local", "localhost", "127.0.0.1"]):
             if not base_url.startswith("http"):
                 base_url = f'http://{base_url}'
         else:
@@ -66,12 +66,16 @@ class IdeYouApi(QThread):
                 return data
 
     def get_order_by_id(self, id_pedido: int = 0) -> list:
+        for order in CONFIG['queue']:
+            if order['id'] == id_pedido:
+                return order
+
         url = f"{self.base_url}/webservices/pedidos/"
         payload: dict = {
             "id": id_pedido
         }
 
-        # self.ui.log = f'Buscando pedido {id_pedido}...'
+        self.ui.log = f'Procurando pedido #{id_pedido} no sistema.'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
     def get_stores(self) -> list:
@@ -80,7 +84,7 @@ class IdeYouApi(QThread):
             "listar": "todos"
         }
 
-        # self.ui.log = 'Buscando lojas...'
+        self.ui.log = f'Buscando a lista de lojas no servidor.'
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
@@ -92,7 +96,7 @@ class IdeYouApi(QThread):
             "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
         }
 
-        # self.ui.log = 'Buscando pedidos na fila...'
+        self.ui.log = f'Buscando a lista de pedidos no servidor.'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
     def download_order(self, pedido: dict) -> str | int:
@@ -105,9 +109,9 @@ class IdeYouApi(QThread):
 
         try:
             file_size = 0
-            # self.ui.log = f'Baixando {file_name}'
-            os.popen(f'curl -o "{local_path}" "{online_path}&download"')
-            # subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+            self.ui.log = f'Baixando {template} #{id_pedido} do servidor.'
+            # os.popen(f'curl -o "{local_path}" "{online_path}&download"')
+            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
 
             while file_size < 5120:
                 sleep(0.1)

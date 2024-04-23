@@ -1,21 +1,25 @@
+import io
 import os
 import re
 import sys
 import urllib
 import winreg as reg
+from PIL import ImageGrab
 from datetime import datetime
 
-from PyQt6 import uic
-from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl
-from PyQt6.QtGui import QDesktopServices, QMovie
+from PyQt6 import uic, QtGui, QtCore
+from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl, QPoint
+from PyQt6.QtGui import QDesktopServices, QMovie, QIcon
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtPdfWidgets import QPdfView
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QPushButton, QHBoxLayout, QWidget, \
+    QTableWidget, QHeaderView, QDialog, QVBoxLayout, QScrollArea
 
+from api import IdeYouApi
 from init import CONFIG, load, reverse_template_mapping, save, template_mapping
-from server import PrintServer
+
 
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -51,8 +55,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.check_interval = 60000
 
-        self.srv = PrintServer(self)
-        self.api = self.srv.api
+        self.api = IdeYouApi(self)
 
         if CONFIG["gsVersion"]:
             MainViewUi, QtBaseClass = uic.loadUiType(assets_path + 'main.ui')
@@ -147,7 +150,6 @@ class MainWindow(QMainWindow):
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
 
-            self.srv.start()
             self.preview(f'{self.api.base_url}/profile.php')
 
             # Create a QTimer to periodically trigger the check function
@@ -177,16 +179,22 @@ class MainWindow(QMainWindow):
 
         queue = self.api.get_wating_orders()
 
-        self.last_checked = str(queue.get("waiting"))
+        if len(queue):
+            CONFIG["queue"] = queue
+            save()
+            self.listQueue(queue)
 
-        for pedido in queue.get('lista'):
+        self.last_checked = str(len(queue))
+
+        for pedido in queue:
             if int(pedido.get("delivery")) in CONFIG['printTypes']:
                 if int(pedido.get("printed")) == 0:
-                    self.__print(pedido)
+                    # self.__print(pedido)
+                    self.log = f'<span style="color: #FF0000;">#=> PEDIDO #{pedido.get("id")} AGUARDANDO IMPRESSÃO!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
                 else:
                     self.log = f'<span style="color: #FF0000;">#=> PEDIDO #{pedido.get("id")} AGUARDANDO APROVAÇÃO!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
-        if queue.get("waiting"):
+        if len(queue):
             # Play the sound effect
             self.sound_effect.play()
 
@@ -243,9 +251,6 @@ class MainWindow(QMainWindow):
         self.ui.loading.show()
         QApplication.processEvents()
 
-        if self.srv.running:
-            self.srv.stop()
-
         load()
         CONFIG['lojas'] = self.api.get_stores()
         save()
@@ -255,10 +260,89 @@ class MainWindow(QMainWindow):
 
         self.preview(f'{self.api.base_url}/profile.php')
 
-        if not self.srv.running:
-            self.srv.start()
-
         self.ui.loading.hide()
+
+    def listQueue(self, orders):
+        self.ui.tableWidget.clearContents()
+        self.ui.tableWidget.setRowCount(0)
+
+        headers = ["", "Identificação", "Ações"]
+        self.ui.tableWidget.setColumnCount(len(headers))
+        self.ui.tableWidget.setHorizontalHeaderLabels(headers)
+        self.ui.tableWidget.cellClicked.connect(self.on_cell_clicked)
+        self.ui.tableWidget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+
+        for order in orders:
+            rowPosition = self.ui.tableWidget.rowCount()
+            self.ui.tableWidget.insertRow(rowPosition)
+
+            type_item = QTableWidgetItem(order["id"])
+            type_item.setForeground(QtGui.QColor(str(order["color"])))
+            type_item.setBackground(QtGui.QColor(str(order["color"])))
+            self.ui.tableWidget.setItem(rowPosition, 0, type_item)
+
+            # Set the text for the first column as "Pedido ID do dia data_hora"
+            pedido_text = f'Pedido {order["id"]} para {order["data_hora"]}'
+            pedido_item = QTableWidgetItem(pedido_text)
+            self.ui.tableWidget.setItem(rowPosition, 1, pedido_item)
+
+            # Set the tooltip for the first column item
+            criado_tooltip = f'Criado em: {order["criado_em"]}'
+            pedido_item.setToolTip(criado_tooltip)
+
+            # Botões na coluna ações
+            btn_layout = QHBoxLayout()
+            btn_layout.setContentsMargins(5, 0, 5, 0)
+
+            # Botão de imprimir
+            btn_print = QPushButton()
+            btn_print.setIcon(QIcon(os.path.join(assets_path, "printer.png")))
+            btn_print.setIconSize(QtCore.QSize(15, 15))
+            btn_print.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_print.clicked.connect(lambda _, pedido=order: self.__print(pedido))
+            btn_layout.addWidget(btn_print)
+
+            # Botão de aprovar
+            btn_approve = QPushButton()
+            btn_approve.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
+            btn_approve.setIconSize(QtCore.QSize(15, 15))
+            btn_approve.setStyleSheet("background-color: green;")
+            btn_approve.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_approve.clicked.connect(lambda _, id=order["id"]: self.api.approve_order(id))
+            btn_layout.addWidget(btn_approve)
+
+            # Botão de cancelar
+            btn_cancel = QPushButton()
+            btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_down.png")))
+            btn_cancel.setIconSize(QtCore.QSize(15, 15))
+            btn_cancel.setStyleSheet("background-color: red;")
+            btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_cancel.clicked.connect(lambda _, id=order["id"]: self.api.cancel_order(id))
+            btn_layout.addWidget(btn_cancel)
+
+            # Adicionando o layout de botões à célula
+            btn_container = QWidget()
+            btn_container.setLayout(btn_layout)
+            self.ui.tableWidget.setCellWidget(rowPosition, 2, btn_container)
+
+            # After populating the table, resize the columns to fit their contents
+            self.ui.tableWidget.resizeColumnsToContents()
+
+            # Setting the width of the last column to fill the remaining space
+            header = self.ui.tableWidget.horizontalHeader()
+            remaining_space = self.ui.tableWidget.viewport().width() - header.length()
+            header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+            header.resizeSection(2, remaining_space)
+
+    def on_cell_clicked(self, row, column):
+        id_pedido = int(self.ui.tableWidget.item(row, 0).text())
+
+        try:
+            pedido = self.api.get_order_by_id(id_pedido)
+            self.api.download_order(pedido)
+        except Exception as e:
+            self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
+            # self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
 
     def preview(self, path_or_addr):
         self.ui.loading.show()
@@ -277,6 +361,7 @@ class MainWindow(QMainWindow):
 
             # Create a QPdfView widget
             pdf_view = QPdfView(self)
+            self.ui.preview_area.setWidget(pdf_view)
 
             # Create a QPdfDocument instance with a parent
             pdf_document = QPdfDocument(pdf_view)
@@ -287,10 +372,83 @@ class MainWindow(QMainWindow):
             # Set the PDF document for the QPdfView
             pdf_view.setDocument(pdf_document)
 
-            # Create a scroll area widget
-            self.ui.preview_area.setWidget(pdf_view)
+            pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
 
         self.ui.loading.hide()
+
+        if 'http' not in path_or_addr:
+            self.get_screenshot(pdf_view)
+
+    def get_screenshot(self, widget):
+        print('Taking screenshot...')
+        # Capture screenshot of the specified widget
+        screenshot = widget.grab()
+
+        # Save the screenshot to a temporary file
+        temp_file = os.path.join(CONFIG['rootPTH'], f'screenshot.png')
+        screenshot.save(temp_file)
+
+        # Copy the screenshot to the clipboard
+        clipboard = QApplication.clipboard()
+        clipboard.setImage(screenshot.toImage())
+
+        # Set the zoom mode to FitToWidth after capturing the screenshot, only if the widget is QPdfView
+        # if isinstance(widget, QPdfView):
+            # widget.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+
+    def alert(self, title: str, message: str):
+        self.ui.loading.show()
+        QMessageBox.information(self, title, message)
+        self.ui.loading.hide()
+
+    def downloadGS(self):
+        file_url = QUrl(CONFIG['gslink'])
+
+        QDesktopServices.openUrl(file_url)
+
+        self.close()
+
+        # # Prompt the user to choose a location to save the file
+        # file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "ghostscript.exe", "All Files (*)")
+        #
+        # if file_path:
+        #     # Create a QNetworkRequest to request the file
+        #     request = QNetworkRequest(file_url)
+        #
+        #     # Create a QNetworkAccessManager to handle the download
+        #     manager = QNetworkAccessManager(self)
+        #
+        #     # Handle the download progress and save the file
+        #     reply = manager.get(request)
+        #
+        #     def onReadyRead():
+        #         data = reply.readAll()
+        #         with open(file_path, "wb") as file:
+        #             file.write(data)
+        #         reply.deleteLater()
+        #         self.alert("Download Realizado", "O arquivo foi salvo no caminho informado!")
+        #
+        #     reply.finished.connect(onReadyRead)
+
+    def limit_orderid_length(self):
+        max_length = 8
+        current_text = self.ui.input_id_pedido.toPlainText()
+
+        if len(current_text) > max_length:
+            self.ui.input_id_pedido.setPlainText(current_text[:max_length])
+
+    def eventFilter(self, obj, event):
+        if obj == self.ui.input_id_pedido and event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+                id_pedido = int(self.ui.input_id_pedido.toPlainText())
+                try:
+                    pedido = self.api.get_order_by_id(id_pedido)
+                    self.api.download_order(pedido)
+                except Exception as e:
+                    # self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
+                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
+                return True  # Event handled
+        return super().eventFilter(obj, event)
 
     @property
     def log(self):
@@ -424,58 +582,3 @@ class MainWindow(QMainWindow):
         CONFIG["deliveryTemplate"] = template_mapping.get(value, "")
 
         save()
-
-    def alert(self, title: str, message: str):
-        self.ui.loading.show()
-        QMessageBox.information(self, title, message)
-        self.ui.loading.hide()
-
-
-    def downloadGS(self):
-        file_url = QUrl(CONFIG['gslink'])
-
-        QDesktopServices.openUrl(file_url)
-
-        self.close()
-
-        # # Prompt the user to choose a location to save the file
-        # file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "ghostscript.exe", "All Files (*)")
-        #
-        # if file_path:
-        #     # Create a QNetworkRequest to request the file
-        #     request = QNetworkRequest(file_url)
-        #
-        #     # Create a QNetworkAccessManager to handle the download
-        #     manager = QNetworkAccessManager(self)
-        #
-        #     # Handle the download progress and save the file
-        #     reply = manager.get(request)
-        #
-        #     def onReadyRead():
-        #         data = reply.readAll()
-        #         with open(file_path, "wb") as file:
-        #             file.write(data)
-        #         reply.deleteLater()
-        #         self.alert("Download Realizado", "O arquivo foi salvo no caminho informado!")
-        #
-        #     reply.finished.connect(onReadyRead)
-
-    def limit_orderid_length(self):
-        max_length = 8
-        current_text = self.ui.input_id_pedido.toPlainText()
-
-        if len(current_text) > max_length:
-            self.ui.input_id_pedido.setPlainText(current_text[:max_length])
-
-    def eventFilter(self, obj, event):
-        if obj == self.ui.input_id_pedido and event.type() == QEvent.Type.KeyPress:
-            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
-                id_pedido = int(self.ui.input_id_pedido.toPlainText())
-                try:
-                    pedido = self.api.get_order_by_id(id_pedido)
-                    self.api.download_order(pedido)
-                except Exception as e:
-                    # self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
-                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
-                return True  # Event handled
-        return super().eventFilter(obj, event)

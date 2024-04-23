@@ -86,9 +86,9 @@ background: #FFF;</string>
      <widget class="QGroupBox" name="gpb_main">
       <property name="geometry">
        <rect>
-        <x>335</x>
+        <x>305</x>
         <y>10</y>
-        <width>445</width>
+        <width>471</width>
         <height>100</height>
        </rect>
       </property>
@@ -96,7 +96,7 @@ background: #FFF;</string>
        <string notr="true"/>
       </property>
       <property name="title">
-       <string>Acesso Rápido</string>
+       <string/>
       </property>
       <widget class="QTextEdit" name="input_url_sistema">
        <property name="enabled">
@@ -104,9 +104,9 @@ background: #FFF;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>86</x>
-         <y>20</y>
-         <width>320</width>
+         <x>60</x>
+         <y>10</y>
+         <width>245</width>
          <height>28</height>
         </rect>
        </property>
@@ -153,8 +153,8 @@ background: #FFF;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>406</x>
-         <y>20</y>
+         <x>310</x>
+         <y>10</y>
          <width>32</width>
          <height>28</height>
         </rect>
@@ -203,9 +203,9 @@ background-color: transparent;</string>
       <widget class="QComboBox" name="select_loja">
        <property name="geometry">
         <rect>
-         <x>276</x>
+         <x>139</x>
          <y>60</y>
-         <width>130</width>
+         <width>170</width>
          <height>28</height>
         </rect>
        </property>
@@ -249,49 +249,14 @@ background-color: transparent;</string>
       <widget class="QLabel" name="label_1">
        <property name="geometry">
         <rect>
-         <x>8</x>
-         <y>25</y>
-         <width>70</width>
-         <height>15</height>
+         <x>10</x>
+         <y>15</y>
+         <width>41</width>
+         <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>URL sistema:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_2">
-       <property name="geometry">
-        <rect>
-         <x>216</x>
-         <y>65</y>
-         <width>55</width>
-         <height>15</height>
-        </rect>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text">
-        <string>Loja atual:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_3">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>65</y>
-         <width>70</width>
-         <height>15</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Imprimir ID:</string>
+        <string>Sistema:</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -303,9 +268,9 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>86</x>
+         <x>10</x>
          <y>60</y>
-         <width>90</width>
+         <width>85</width>
          <height>28</height>
         </rect>
        </property>
@@ -349,7 +314,7 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>181</x>
+         <x>100</x>
          <y>60</y>
          <width>32</width>
          <height>28</height>
@@ -399,8 +364,8 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>406</x>
-         <y>60</y>
+         <x>350</x>
+         <y>10</y>
          <width>32</width>
          <height>28</height>
         </rect>
@@ -443,13 +408,44 @@ background-color: transparent;</string>
         </size>
        </property>
       </widget>
+      <widget class="QLabel" name="img_logo">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>315</x>
+         <y>40</y>
+         <width>150</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>logo.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="gpb_main_2">
       <property name="geometry">
        <rect>
-        <x>335</x>
-        <y>113</y>
-        <width>445</width>
+        <x>305</x>
+        <y>115</y>
+        <width>470</width>
         <height>370</height>
        </rect>
       </property>
@@ -457,79 +453,14 @@ background-color: transparent;</string>
        <string notr="true"/>
       </property>
       <property name="title">
-       <string>Últimas atividades</string>
+       <string/>
       </property>
-      <widget class="QTextBrowser" name="log_box">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>20</y>
-         <width>425</width>
-         <height>320</height>
-        </rect>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="cursor" stdset="0">
-        <cursorShape>IBeamCursor</cursorShape>
-       </property>
-       <property name="contextMenuPolicy">
-        <enum>Qt::NoContextMenu</enum>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">font-weight: bold; color: #71797E;</string>
-       </property>
-       <property name="inputMethodHints">
-        <set>Qt::ImhNone</set>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Plain</enum>
-       </property>
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAsNeeded</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-       <property name="html">
-        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:600; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="textInteractionFlags">
-        <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
-       </property>
-       <property name="placeholderText">
-        <string/>
-       </property>
-      </widget>
       <widget class="QLabel" name="last_checked">
        <property name="geometry">
         <rect>
          <x>10</x>
          <y>340</y>
-         <width>425</width>
+         <width>450</width>
          <height>20</height>
         </rect>
        </property>
@@ -552,42 +483,57 @@ p, li { white-space: pre-wrap; }
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
        </property>
       </widget>
-     </widget>
-     <widget class="QLabel" name="img_logo">
-      <property name="geometry">
-       <rect>
-        <x>15</x>
-        <y>10</y>
-        <width>300</width>
-        <height>100</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="pixmap">
-       <pixmap>logo.png</pixmap>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
+      <widget class="QTableWidget" name="tableWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>450</width>
+         <height>330</height>
+        </rect>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::NoFrame</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="lineWidth">
+        <number>0</number>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="showGrid">
+        <bool>true</bool>
+       </property>
+       <property name="gridStyle">
+        <enum>Qt::SolidLine</enum>
+       </property>
+       <property name="sortingEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="cornerButtonEnabled">
+        <bool>false</bool>
+       </property>
+       <attribute name="horizontalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>105</number>
+       </attribute>
+       <attribute name="verticalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+      </widget>
      </widget>
      <widget class="QScrollArea" name="preview_area">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>120</y>
-        <width>310</width>
-        <height>362</height>
+        <x>5</x>
+        <y>10</y>
+        <width>290</width>
+        <height>475</height>
        </rect>
       </property>
       <property name="autoFillBackground">
@@ -607,8 +553,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>306</width>
-         <height>358</height>
+         <width>286</width>
+         <height>471</height>
         </rect>
        </property>
       </widget>
@@ -1078,6 +1024,74 @@ background-color: transparent;</string>
        </property>
       </widget>
      </widget>
+     <widget class="QTextBrowser" name="log_box">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>280</y>
+        <width>370</width>
+        <height>210</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="cursor" stdset="0">
+       <cursorShape>IBeamCursor</cursorShape>
+      </property>
+      <property name="contextMenuPolicy">
+       <enum>Qt::NoContextMenu</enum>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font-weight: bold; color: #71797E;</string>
+      </property>
+      <property name="inputMethodHints">
+       <set>Qt::ImhNone</set>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAsNeeded</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:600; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+      </property>
+      <property name="placeholderText">
+       <string/>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QPushButton" name="btn_stop">
@@ -1164,6 +1178,10 @@ background-color: #d01c35;</string>
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <zorder>loading</zorder>
+   <zorder>tabWidget</zorder>
+   <zorder>btn_stop</zorder>
+   <zorder>gsv_label</zorder>
   </widget>
  </widget>
  <resources/>

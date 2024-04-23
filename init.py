@@ -13,7 +13,9 @@ S_CONFIG = ["dStore",
             'deliveryTemplate',
             'balcaoTemplate',
             'printTypes',
-            'openOnLogon']
+            'openOnLogon',
+            "queue"
+]
 
 template_mapping = {
     "Padrão": "bundle",
@@ -37,6 +39,7 @@ def load():
     global CONFIG
     global S_CONFIG
 
+    CONFIG['queue'] = []
     CONFIG["nCopies"] = 1
     CONFIG["dPrinter"] = ""
     CONFIG["dStore"] = "0"
@@ -80,7 +83,7 @@ def load():
 
         CONFIG['command'] = 'gswin32c.exe'
         CONFIG['sDevice'] = 'mswinpr2'
-        CONFIG['rootPTH'] = f'C:/temp/'
+        CONFIG['rootPTH'] = f'C:/tmp/'
 
         if not os.path.exists(CONFIG['rootPTH']):
             os.makedirs(CONFIG['rootPTH'])
