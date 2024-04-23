@@ -88,7 +88,7 @@ background: #FFF;</string>
        <rect>
         <x>305</x>
         <y>10</y>
-        <width>471</width>
+        <width>470</width>
         <height>100</height>
        </rect>
       </property>
@@ -104,9 +104,9 @@ background: #FFF;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>60</x>
+         <x>153</x>
          <y>10</y>
-         <width>245</width>
+         <width>271</width>
          <height>28</height>
         </rect>
        </property>
@@ -135,10 +135,16 @@ background: #FFF;</string>
         <set>Qt::ImhNone</set>
        </property>
        <property name="frameShape">
-        <enum>QFrame::WinPanel</enum>
+        <enum>QFrame::Box</enum>
        </property>
        <property name="frameShadow">
-        <enum>QFrame::Sunken</enum>
+        <enum>QFrame::Plain</enum>
+       </property>
+       <property name="lineWidth">
+        <number>1</number>
+       </property>
+       <property name="midLineWidth">
+        <number>0</number>
        </property>
        <property name="verticalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -153,7 +159,7 @@ background: #FFF;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>310</x>
+         <x>428</x>
          <y>10</y>
          <width>32</width>
          <height>28</height>
@@ -203,9 +209,9 @@ background-color: transparent;</string>
       <widget class="QComboBox" name="select_loja">
        <property name="geometry">
         <rect>
-         <x>139</x>
+         <x>283</x>
          <y>60</y>
-         <width>170</width>
+         <width>141</width>
          <height>28</height>
         </rect>
        </property>
@@ -235,32 +241,16 @@ background-color: transparent;</string>
         <string notr="true">font-weight: bold; color: #FF0000;</string>
        </property>
        <property name="currentText">
-        <string>LOJA BETHANIA</string>
+        <string>LOJA 01</string>
        </property>
        <property name="frame">
         <bool>true</bool>
        </property>
        <item>
         <property name="text">
-         <string>LOJA BETHANIA</string>
+         <string>LOJA 01</string>
         </property>
        </item>
-      </widget>
-      <widget class="QLabel" name="label_1">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>15</y>
-         <width>41</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Sistema:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
       </widget>
       <widget class="QTextEdit" name="input_id_pedido">
        <property name="enabled">
@@ -268,7 +258,7 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>153</x>
          <y>60</y>
          <width>85</width>
          <height>28</height>
@@ -314,7 +304,7 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>100</x>
+         <x>243</x>
          <y>60</y>
          <width>32</width>
          <height>28</height>
@@ -364,8 +354,8 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>350</x>
-         <y>10</y>
+         <x>428</x>
+         <y>60</y>
          <width>32</width>
          <height>28</height>
         </rect>
@@ -414,10 +404,10 @@ background-color: transparent;</string>
        </property>
        <property name="geometry">
         <rect>
-         <x>315</x>
-         <y>40</y>
-         <width>150</width>
-         <height>50</height>
+         <x>10</x>
+         <y>15</y>
+         <width>130</width>
+         <height>69</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -430,7 +420,7 @@ background-color: transparent;</string>
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap>logo.png</pixmap>
+        <pixmap>poweredby.png</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -1178,10 +1168,6 @@ background-color: #d01c35;</string>
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <zorder>loading</zorder>
-   <zorder>tabWidget</zorder>
-   <zorder>btn_stop</zorder>
-   <zorder>gsv_label</zorder>
   </widget>
  </widget>
  <resources/>

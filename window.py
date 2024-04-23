@@ -1,21 +1,20 @@
-import io
 import os
 import re
 import sys
 import urllib
 import winreg as reg
-from PIL import ImageGrab
 from datetime import datetime
+from time import sleep
 
 from PyQt6 import uic, QtGui, QtCore
-from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl, QPoint
+from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl, QRectF
 from PyQt6.QtGui import QDesktopServices, QMovie, QIcon
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtPdfWidgets import QPdfView
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QPushButton, QHBoxLayout, QWidget, \
-    QTableWidget, QHeaderView, QDialog, QVBoxLayout, QScrollArea
+    QTableWidget, QHeaderView
 
 from api import IdeYouApi
 from init import CONFIG, load, reverse_template_mapping, save, template_mapping
@@ -273,6 +272,7 @@ class MainWindow(QMainWindow):
         self.ui.tableWidget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         for order in orders:
+            self.api.download_order(order.get("id"), CONFIG["deliveryTemplate" if int(order.get("delivery")) else "balcaoTemplate"])
             rowPosition = self.ui.tableWidget.rowCount()
             self.ui.tableWidget.insertRow(rowPosition)
 
@@ -338,26 +338,30 @@ class MainWindow(QMainWindow):
         id_pedido = int(self.ui.tableWidget.item(row, 0).text())
 
         try:
-            pedido = self.api.get_order_by_id(id_pedido)
-            self.api.download_order(pedido)
+            self.preview(id_pedido)
         except Exception as e:
             self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
             # self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
 
-    def preview(self, path_or_addr):
+    def preview(self, thing: str | int):
         self.ui.loading.show()
         QApplication.processEvents()
 
-        if 'http' in path_or_addr:
+        if isinstance(thing, str) and 'http' in thing:
             # Create a QWebEngineView widget to display web content
             webview = QWebEngineView()
             self.ui.preview_area.setWidget(webview)
 
             # Load a URL into the QWebEngineView
-            url = urllib.parse.quote(path_or_addr, safe=':/?&=')
+            url = urllib.parse.quote(thing, safe=':/?&=')
             webview.setUrl(QUrl.fromLocalFile(url) if 'file://' in url else QUrl(url))
         else:
-            self.log = f'Pré-visualizando - {path_or_addr}'
+            pedido = self.api.get_order_by_id(int(thing))
+            template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+
+            file_name = self.api.download_order(int(thing), template)
+
+            self.log = f'Pré-visualizando - {file_name}'
 
             # Create a QPdfView widget
             pdf_view = QPdfView(self)
@@ -367,17 +371,29 @@ class MainWindow(QMainWindow):
             pdf_document = QPdfDocument(pdf_view)
 
             # Load the PDF from a file
-            pdf_document.load(path_or_addr)
+            pdf_document.load(os.path.join(CONFIG["rootPTH"], file_name))
 
             # Set the PDF document for the QPdfView
             pdf_view.setDocument(pdf_document)
+            pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
-            pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
+            # Assuming pdf_view is your QPdfView widget
+            scrollbar_stylesheet = """
+            QScrollBar:vertical {
+                width: 0px;
+                border: none;
+                background: transparent;
+            }
+            """
+            # Apply the stylesheet to the scrollbar
+            pdf_view.setStyleSheet(scrollbar_stylesheet)
+
+            # pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
 
         self.ui.loading.hide()
 
-        if 'http' not in path_or_addr:
-            self.get_screenshot(pdf_view)
+        if isinstance(thing, int):
+            QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view))
 
     def get_screenshot(self, widget):
         print('Taking screenshot...')
@@ -394,7 +410,7 @@ class MainWindow(QMainWindow):
 
         # Set the zoom mode to FitToWidth after capturing the screenshot, only if the widget is QPdfView
         # if isinstance(widget, QPdfView):
-            # widget.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+        #     widget.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
     def alert(self, title: str, message: str):
         self.ui.loading.show()
@@ -442,8 +458,7 @@ class MainWindow(QMainWindow):
             if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
                 id_pedido = int(self.ui.input_id_pedido.toPlainText())
                 try:
-                    pedido = self.api.get_order_by_id(id_pedido)
-                    self.api.download_order(pedido)
+                    self.preview(id_pedido)
                 except Exception as e:
                     # self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
                     self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'

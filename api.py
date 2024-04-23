@@ -1,8 +1,6 @@
 import logging
 import os
 import re
-import subprocess
-import urllib
 from time import sleep
 
 import requests
@@ -65,7 +63,7 @@ class IdeYouApi(QThread):
             finally:
                 return data
 
-    def get_order_by_id(self, id_pedido: int = 0) -> list:
+    def get_order_by_id(self, id_pedido: int = 0) -> dict:
         for order in CONFIG['queue']:
             if order['id'] == id_pedido:
                 return order
@@ -75,7 +73,7 @@ class IdeYouApi(QThread):
             "id": id_pedido
         }
 
-        self.ui.log = f'Procurando pedido #{id_pedido} no sistema.'
+        self.ui.log = f'procurando pedido #{id_pedido} no sistema.'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
     def get_stores(self) -> list:
@@ -84,7 +82,7 @@ class IdeYouApi(QThread):
             "listar": "todos"
         }
 
-        self.ui.log = f'Buscando a lista de lojas no servidor.'
+        self.ui.log = f'atualizando lista de lojas.'
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
@@ -96,46 +94,44 @@ class IdeYouApi(QThread):
             "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
         }
 
-        self.ui.log = f'Buscando a lista de pedidos no servidor.'
+        self.ui.log = f'buscando a fila de pedidos no servidor.'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
-    def download_order(self, pedido: dict) -> str | int:
-        id_pedido = int(pedido.get('id'))
-        template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
-
-        file_name = f'Pedido#{id_pedido}.pdf'
+    def download_order(self, id_pedido: int, template: str) -> str | int:
+        file_name = f'{template}#{id_pedido}.pdf'
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
-        online_path = f'{self.base_url}/views/print/?id={id_pedido}&template={template}'
 
         try:
-            file_size = 0
-            self.ui.log = f'Baixando {template} #{id_pedido} do servidor.'
-            # os.popen(f'curl -o "{local_path}" "{online_path}&download"')
-            subprocess.run(['curl', '-o', local_path, f'{online_path}&download'])
+            if not os.path.exists(local_path):
+                file_size = 0
+                self.ui.log = f'baixando {template} #{id_pedido} do servidor.'
+                os.popen(f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download"')
+                # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download'])
 
-            while file_size < 5120:
-                sleep(0.1)
-                try:
-                    file_size = os.path.getsize(local_path)
-                except FileNotFoundError:
+                while file_size < 5120:
                     sleep(0.1)
+                    try:
+                        file_size = os.path.getsize(local_path)
+                    except FileNotFoundError:
+                        sleep(0.1)
+            else:
+                self.ui.log = f'<span style="color: #1976d2;">{template}#{id_pedido} já baixado, download ignorado.</span>'
 
-            return file_name
         except Exception as error:
             self.ui.log = error
             return 500
         finally:
-            self.ui.preview(local_path)
             QApplication.processEvents()
+            return file_name
 
-    def print_order(self, pedido: dict):
-        id_pedido = int(pedido.get('id'))
+    def print_order(self, id_pedido: int):
+        pedido = self.get_order_by_id(id_pedido)
         template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
         _template = reverse_template_mapping.get(template, "Padrão")
 
         try:
             printer = self.ui.dPrinter
-            file_name = self.download_order(pedido)
+            file_name = self.download_order(id_pedido, template)
 
             if not file_name == 500:
                 local_path = os.path.join(CONFIG["rootPTH"], file_name)
