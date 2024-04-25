@@ -5,7 +5,8 @@ import tempfile
 import subprocess
 
 CONFIG = {}
-S_CONFIG = ["dStore",
+S_CONFIG = ["version",
+            "dStore",
             "nCopies",
             "dPrinter",
             'lojas',
@@ -38,6 +39,8 @@ def save():
 def load():
     global CONFIG
     global S_CONFIG
+
+    CONFIG['version'] = "1.3"
 
     CONFIG['queue'] = []
     CONFIG["nCopies"] = 1

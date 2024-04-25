@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidget
 from api import IdeYouApi
 from init import CONFIG, load, reverse_template_mapping, save, template_mapping
 
-
 if hasattr(sys, '_MEIPASS'):
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     assets_path = sys._MEIPASS + '/assets/'
@@ -68,6 +67,7 @@ class MainWindow(QMainWindow):
 
             movie.start()
             self.show()
+            self.setWindowTitle(f"IdeYouPrint | Versão {CONFIG['version']}")
 
             self.ui.gsv_label.setText(CONFIG["gsVersion"])
             self.ui.gsv_label.setStyleSheet('color: #000;')
@@ -86,7 +86,19 @@ class MainWindow(QMainWindow):
                 self.ui.select_printer.setCurrentIndex(0)
 
             if not CONFIG['lojas'] and CONFIG['sistema']:
-                self.load()
+                self.ui.loading.show()
+                QApplication.processEvents()
+
+                load()
+                CONFIG['lojas'] = self.api.get_stores()
+                save()
+
+                self.ui.select_loja.clear()
+                self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+
+                self.preview(f'{self.api.base_url}/profile.php')
+
+                self.ui.loading.hide()
             else:
                 self.ui.select_loja.clear()
 
@@ -127,24 +139,24 @@ class MainWindow(QMainWindow):
                 self.ui.select_modelo_delivery.setCurrentIndex(0)
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
-            self.ui.btn_reload.clicked.connect(self.load)
+            self.ui.btn_reload.clicked.connect(self.load_settings)
             self.ui.btn_recheck.clicked.connect(lambda: self.check(True))
 
-            self.ui.btn_print.clicked.connect(self.__print)
+            self.ui.btn_print.clicked.connect(self.print_order)
             self.ui.btn_cleanup.clicked.connect(self.api.clean_up_files)
 
-            self.ui.input_url_sistema.textChanged.connect(self.save)
+            self.ui.input_url_sistema.textChanged.connect(self.save_settings)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
 
-            self.ui.select_loja.currentIndexChanged.connect(self.save)
-            self.ui.select_printer.currentIndexChanged.connect(self.save)
-            self.ui.select_printqtd.currentIndexChanged.connect(self.save)
-            self.ui.select_modelo_balcao.currentIndexChanged.connect(self.save)
-            self.ui.select_modelo_delivery.currentIndexChanged.connect(self.save)
+            self.ui.select_loja.currentIndexChanged.connect(self.save_settings)
+            self.ui.select_printer.currentIndexChanged.connect(self.save_settings)
+            self.ui.select_printqtd.currentIndexChanged.connect(self.save_settings)
+            self.ui.select_modelo_balcao.currentIndexChanged.connect(self.save_settings)
+            self.ui.select_modelo_delivery.currentIndexChanged.connect(self.save_settings)
 
-            self.ui.cb_print_balcao.stateChanged.connect(self.save)
-            self.ui.cb_print_delivery.stateChanged.connect(self.save)
-            self.ui.cb_open_on_logon.stateChanged.connect(self.save)
+            self.ui.cb_print_balcao.stateChanged.connect(self.save_settings)
+            self.ui.cb_print_delivery.stateChanged.connect(self.save_settings)
+            self.ui.cb_open_on_logon.stateChanged.connect(self.save_settings)
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
@@ -169,6 +181,30 @@ class MainWindow(QMainWindow):
         self.sound_effect.setLoopCount(0)
         self.sound_effect.setSource(QUrl.fromLocalFile(assets_path + "slotmachine.wav"))
 
+        scrollbar_stylesheet = """
+        QScrollBar:vertical {
+            width: 15px;
+            border: none;
+            background: transparent;
+        }
+        QScrollBar::handle:vertical {
+            cursor: grab;
+            background: #000000;
+        }
+        """
+        # Apply the styles to the scrollbar
+        self.set_open_hand_cursor()
+        self.ui.tableWidget.setStyleSheet(scrollbar_stylesheet)
+        self.ui.tableWidget.verticalScrollBar().sliderPressed.connect(self.set_closed_hand_cursor)
+        self.ui.tableWidget.verticalScrollBar().sliderReleased.connect(self.set_open_hand_cursor)
+
+        CONFIG["queue"] = []
+        save()
+
+        if not self.api.check_app_version() == 200:
+            self.alert("Nova versão disponível!", "Para atualizar este aplicativo, siga os passos:<br><br>1. Apague esta versão do seu computador.<br>2. Faça login no seu sistema.<br>3. No menu, clique em configurações -> pedidos.<br>4. Depois, clique no botão verde no topo IdeYou Print.<br>5. Pronto, terminando de baixar é só abrir e usar!<br><br> Qualquer dúvidas, procure seu gerente! :)")
+            QTimer.singleShot(0, QApplication.quit)
+
     def check(self, reset: bool = False):
         self.ui.loading.show()
         QApplication.processEvents()
@@ -181,17 +217,16 @@ class MainWindow(QMainWindow):
         if len(queue):
             CONFIG["queue"] = queue
             save()
-            self.listQueue(queue)
+            self.list_queue(queue)
 
         self.last_checked = str(len(queue))
 
         for pedido in queue:
             if int(pedido.get("delivery")) in CONFIG['printTypes']:
-                if int(pedido.get("printed")) == 0:
-                    # self.__print(pedido)
-                    self.log = f'<span style="color: #FF0000;">#=> PEDIDO #{pedido.get("id")} AGUARDANDO IMPRESSÃO!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+                if not int(pedido.get("printed")) == 1:
+                    self.print_order(pedido)
                 else:
-                    self.log = f'<span style="color: #FF0000;">#=> PEDIDO #{pedido.get("id")} AGUARDANDO APROVAÇÃO!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+                    self.log = f'<span style="color: #FF0000;">#=> ATENÇÃO AO PEDIDO #{pedido.get("id")}!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
         if len(queue):
             # Play the sound effect
@@ -206,62 +241,7 @@ class MainWindow(QMainWindow):
 
         self.ui.loading.hide()
 
-    def __print(self, pedido: dict | bool = False):
-        self.ui.loading.show()
-        QApplication.processEvents()
-
-        if pedido is False:
-            id_pedido = int(self.ui.input_id_pedido.toPlainText())
-            pedido = self.api.get_order_by_id(id_pedido)
-
-        if pedido:
-            self.api.print_order(pedido)
-        else:
-            self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
-
-    def save(self):
-        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
-        CONFIG["dStore"] = self.dStore
-
-        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
-        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
-
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
-
-        CONFIG['printTypes'] = []
-
-        if self.ui.cb_print_balcao.isChecked():
-            CONFIG['printTypes'].append(0)
-
-        if self.ui.cb_print_delivery.isChecked():
-            CONFIG['printTypes'].append(1)
-
-        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
-        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
-
-        CONFIG['openOnLogon'] = self.ui.cb_open_on_logon.isChecked()
-
-        save()
-
-        toggle_logon_behavior(CONFIG['openOnLogon'])
-
-    def load(self):
-        self.ui.loading.show()
-        QApplication.processEvents()
-
-        load()
-        CONFIG['lojas'] = self.api.get_stores()
-        save()
-
-        self.ui.select_loja.clear()
-        self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
-
-        self.preview(f'{self.api.base_url}/profile.php')
-
-        self.ui.loading.hide()
-
-    def listQueue(self, orders):
+    def list_queue(self, orders):
         self.ui.tableWidget.clearContents()
         self.ui.tableWidget.setRowCount(0)
 
@@ -272,7 +252,8 @@ class MainWindow(QMainWindow):
         self.ui.tableWidget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         for order in orders:
-            self.api.download_order(order.get("id"), CONFIG["deliveryTemplate" if int(order.get("delivery")) else "balcaoTemplate"])
+            self.api.download_order(order.get("id"),
+                                    CONFIG["deliveryTemplate" if int(order.get("delivery")) else "balcaoTemplate"])
             rowPosition = self.ui.tableWidget.rowCount()
             self.ui.tableWidget.insertRow(rowPosition)
 
@@ -299,26 +280,52 @@ class MainWindow(QMainWindow):
             btn_print.setIcon(QIcon(os.path.join(assets_path, "printer.png")))
             btn_print.setIconSize(QtCore.QSize(15, 15))
             btn_print.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_print.clicked.connect(lambda _, pedido=order: self.__print(pedido))
+            btn_print.clicked.connect(lambda _, pedido=order: self.print_order(pedido))
             btn_layout.addWidget(btn_print)
 
-            # Botão de aprovar
-            btn_approve = QPushButton()
-            btn_approve.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
-            btn_approve.setIconSize(QtCore.QSize(15, 15))
-            btn_approve.setStyleSheet("background-color: green;")
-            btn_approve.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_approve.clicked.connect(lambda _, id=order["id"]: self.api.approve_order(id))
-            btn_layout.addWidget(btn_approve)
+            if order.get("status") == 402:
+            # Botão de dispensar
+                btn_cancel = QPushButton()
+                btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
+                btn_cancel.setIconSize(QtCore.QSize(15, 15))
+                btn_cancel.setStyleSheet("background-color: #0076F3;")
+                btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn_cancel.clicked.connect(lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 0))
+                btn_layout.addWidget(btn_cancel)
+            elif order.get("status") == 404:
+                # Botão de aprovar
+                btn_approve = QPushButton()
+                btn_approve.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
+                btn_approve.setIconSize(QtCore.QSize(15, 15))
+                btn_approve.setStyleSheet("background-color: green;")
+                btn_approve.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn_approve.clicked.connect(
+                    lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 1))
+                btn_layout.addWidget(btn_approve)
 
-            # Botão de cancelar
-            btn_cancel = QPushButton()
-            btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_down.png")))
-            btn_cancel.setIconSize(QtCore.QSize(15, 15))
-            btn_cancel.setStyleSheet("background-color: red;")
-            btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_cancel.clicked.connect(lambda _, id=order["id"]: self.api.cancel_order(id))
-            btn_layout.addWidget(btn_cancel)
+                # Botão de cancelar
+                btn_cancel = QPushButton()
+                btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_down.png")))
+                btn_cancel.setIconSize(QtCore.QSize(15, 15))
+                btn_cancel.setStyleSheet("background-color: red;")
+                btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn_cancel.clicked.connect(
+                    lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 0))
+                btn_layout.addWidget(btn_cancel)
+            else:
+                # Botão de dispensar
+                btn_cancel = QPushButton()
+                btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
+                btn_cancel.setIconSize(QtCore.QSize(15, 15))
+                btn_cancel.setStyleSheet("background-color: #0076F3;")
+                btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn_cancel.clicked.connect(
+                    lambda _, id=order["id"]: [
+                        self.ui.tableWidget.removeRow(i)
+                        for i in range(self.ui.tableWidget.rowCount())
+                        if self.ui.tableWidget.item(i, 0).text() == str(id)
+                    ])
+                btn_layout.addWidget(btn_cancel)
 
             # Adicionando o layout de botões à célula
             btn_container = QWidget()
@@ -340,8 +347,7 @@ class MainWindow(QMainWindow):
         try:
             self.preview(id_pedido)
         except Exception as e:
-            self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
-            # self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
+            self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido #{id_pedido}. % {str(e)} %</span>'
 
     def preview(self, thing: str | int):
         self.ui.loading.show()
@@ -377,7 +383,6 @@ class MainWindow(QMainWindow):
             pdf_view.setDocument(pdf_document)
             pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
-            # Assuming pdf_view is your QPdfView widget
             scrollbar_stylesheet = """
             QScrollBar:vertical {
                 width: 0px;
@@ -385,7 +390,6 @@ class MainWindow(QMainWindow):
                 background: transparent;
             }
             """
-            # Apply the stylesheet to the scrollbar
             pdf_view.setStyleSheet(scrollbar_stylesheet)
 
             # pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
@@ -393,24 +397,21 @@ class MainWindow(QMainWindow):
         self.ui.loading.hide()
 
         if isinstance(thing, int):
-            QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view))
+            QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view, int(thing)))
 
-    def get_screenshot(self, widget):
-        print('Taking screenshot...')
-        # Capture screenshot of the specified widget
+    def get_screenshot(self, widget, thing):
+        self.log = f'tirando print do pedido #{thing}.'
+
         screenshot = widget.grab()
 
-        # Save the screenshot to a temporary file
-        temp_file = os.path.join(CONFIG['rootPTH'], f'screenshot.png')
-        screenshot.save(temp_file)
+        temp_file = os.path.join(CONFIG['rootPTH'], f'pedido#{thing}.jpg')
+        screenshot.save(temp_file, 'jpg')
 
-        # Copy the screenshot to the clipboard
         clipboard = QApplication.clipboard()
         clipboard.setImage(screenshot.toImage())
 
-        # Set the zoom mode to FitToWidth after capturing the screenshot, only if the widget is QPdfView
-        # if isinstance(widget, QPdfView):
-        #     widget.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+        if isinstance(widget, QPdfView):
+            widget.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
     def alert(self, title: str, message: str):
         self.ui.loading.show()
@@ -446,6 +447,37 @@ class MainWindow(QMainWindow):
         #
         #     reply.finished.connect(onReadyRead)
 
+    def print_order(self, pedido: dict | bool = False):
+        self.ui.loading.show()
+        QApplication.processEvents()
+
+        if pedido is False:
+            id_pedido = int(self.ui.input_id_pedido.toPlainText())
+            pedido = self.api.get_order_by_id(id_pedido)
+
+        if pedido:
+            self.api.print_order(pedido)
+        else:
+            self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
+
+    def set_order_status(self, row: int, id_pedido: int, id_status: int):
+        try:
+            response = self.api.set_order_status(id_pedido, id_status)
+
+            for element in response.get('messages'):
+                if element['type'] not in ['success', 'debug', 'data']:
+                    self.alert(element['type'], element['message'])
+
+            if response.get('code') == 200:
+                # self.ui.tableWidget.removeRow(row)
+                for i in range(self.ui.tableWidget.rowCount()):
+                    if self.ui.tableWidget.item(i, 0).text() == str(id_pedido):
+                        self.ui.tableWidget.removeRow(i)
+                        break
+        except Exception as e:
+            self.alert("Falha na operação!",
+                       f'<span style="color: #FF0000;">Erro ao atualizar pedido #{id_pedido}, realize essa operação no sistema e informe o administrador o erro abaixo: <br><br>% {str(e)} %</span>')
+
     def limit_orderid_length(self):
         max_length = 8
         current_text = self.ui.input_id_pedido.toPlainText()
@@ -460,10 +492,57 @@ class MainWindow(QMainWindow):
                 try:
                     self.preview(id_pedido)
                 except Exception as e:
-                    # self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido [{id_pedido}]: {str(e)}.</span>'
-                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar [{id_pedido}], pedido não encontrado.</span>'
+                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido #{id_pedido}: {str(e)}.</span>'
                 return True  # Event handled
         return super().eventFilter(obj, event)
+
+    def set_closed_hand_cursor(self):
+        self.ui.tableWidget.verticalScrollBar().setCursor(QtCore.Qt.CursorShape.ClosedHandCursor)
+
+    def set_open_hand_cursor(self):
+        self.ui.tableWidget.verticalScrollBar().setCursor(QtCore.Qt.CursorShape.OpenHandCursor)
+
+    def load_settings(self):
+        self.ui.loading.show()
+        QApplication.processEvents()
+
+        load()
+        CONFIG['lojas'] = self.api.get_stores()
+        save()
+
+        self.ui.select_loja.clear()
+        self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
+
+        self.preview(f'{self.api.base_url}/profile.php')
+
+        self.ui.loading.hide()
+
+    def save_settings(self):
+        CONFIG["sistema"] = self.ui.input_url_sistema.toPlainText()
+        CONFIG["dStore"] = self.dStore
+
+        CONFIG["dPrinter"] = self.ui.select_printer.currentText()
+        CONFIG["nCopies"] = re.sub(r'[^0-9]', '', self.ui.select_printqtd.currentText()).lstrip('0')
+
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+
+        CONFIG['printTypes'] = []
+
+        if self.ui.cb_print_balcao.isChecked():
+            CONFIG['printTypes'].append(0)
+
+        if self.ui.cb_print_delivery.isChecked():
+            CONFIG['printTypes'].append(1)
+
+        CONFIG['balcaoTemplate'] = template_mapping.get(self.ui.select_modelo_balcao.currentText(), "")
+        CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
+
+        CONFIG['openOnLogon'] = self.ui.cb_open_on_logon.isChecked()
+
+        save()
+
+        toggle_logon_behavior(CONFIG['openOnLogon'])
 
     @property
     def log(self):
@@ -513,7 +592,7 @@ class MainWindow(QMainWindow):
         for loja in CONFIG["lojas"]:
             if dLoja == loja["nome"]:
                 id_loja = int(loja["id"])
-        
+
         return str(id_loja)
 
     @dStore.setter

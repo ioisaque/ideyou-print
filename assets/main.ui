@@ -26,7 +26,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>IdeYouPrint | Versão 1.2</string>
+   <string>IdeYouPrint | Versão ?.?</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -483,7 +483,7 @@ background-color: transparent;</string>
         </rect>
        </property>
        <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
+        <enum>QFrame::Box</enum>
        </property>
        <property name="frameShadow">
         <enum>QFrame::Plain</enum>

@@ -21,7 +21,7 @@ class IdeYouApi(QThread):
 
     @property
     def base_url(self) -> str:
-        base_url = f'{self.ui.sistema}' + ""
+        base_url = f'{CONFIG["sistema"]}' + ""
 
         if any(addr in base_url for addr in ["192.168", "block.local", "localhost", "127.0.0.1"]):
             if not base_url.startswith("http"):
@@ -41,7 +41,7 @@ class IdeYouApi(QThread):
     def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
         data = []
 
-        if self.ui.sistema == '':
+        if CONFIG["sistema"] == '':
             return self.ui.alert('Erro 400',
                                  'Caminho do sistema indefinido, informe a\nURL do seu sistema para utilizar o serviço.')
 
@@ -63,6 +63,20 @@ class IdeYouApi(QThread):
             finally:
                 return data
 
+    def check_app_version(self) -> int:
+        url = f"{self.base_url}/webservices/settings/?name=autoprint"
+
+        response = self.__request(None, url, {"User-Agent": "Postman"}, "GET").get('data')
+
+        v1 = float(CONFIG['version'])
+        v2 = float(response.get("version"))
+
+        if not v1 == v2:
+            print(repr(response.get("version")), repr(CONFIG['version']))
+            return 400
+
+        return 200
+
     def get_order_by_id(self, id_pedido: int = 0) -> dict:
         for order in CONFIG['queue']:
             if order['id'] == id_pedido:
@@ -73,8 +87,27 @@ class IdeYouApi(QThread):
             "id": id_pedido
         }
 
-        self.ui.log = f'procurando pedido #{id_pedido} no sistema.'
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+
+    def set_order_status(self, id_pedido: int = 0, id_status: int = 0) -> dict:
+        url = f"{self.base_url}/webservices/pedidos/"
+        payload: dict = {
+            "dialog": True,
+            "id_status": id_status if not id_status == 402 else 0,
+            "setStatusPedido": id_pedido,
+            "comentario": "Pedido recusado pela loja." if id_status == 0 else None
+        }
+
+        return self.__request(payload, url, {"User-Agent": "Postman"})
+
+    def set_order_printed(self, id_pedido: int = 0, id_status: int = 0) -> dict:
+        url = f"{self.base_url}/webservices/pedidos/"
+        payload: dict = {
+            "id_status": id_status,
+            "setPrintedPedido": id_pedido
+        }
+
+        return self.__request(payload, url, {"User-Agent": "Postman"})
 
     def get_stores(self) -> list:
         url = f"{self.base_url}/webservices/lojas/"
@@ -82,7 +115,6 @@ class IdeYouApi(QThread):
             "listar": "todos"
         }
 
-        self.ui.log = f'atualizando lista de lojas.'
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
@@ -91,11 +123,12 @@ class IdeYouApi(QThread):
         url = f"{self.base_url}/webservices/pedidos/"
         payload: dict = {
             "listar": "queue",
-            "id_loja": id_loja if id_loja > 0 else CONFIG["dStore"]
+            "id_loja": int(id_loja if id_loja > 0 else CONFIG["dStore"])
         }
+        response = self.__request(payload, url, {"User-Agent": "Postman"})
 
-        self.ui.log = f'buscando a fila de pedidos no servidor.'
-        return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+        # self.ui.log = f'buscando a fila de pedidos no servidor.'
+        return response.get('data')
 
     def download_order(self, id_pedido: int, template: str) -> str | int:
         file_name = f'{template}#{id_pedido}.pdf'
@@ -104,7 +137,7 @@ class IdeYouApi(QThread):
         try:
             if not os.path.exists(local_path):
                 file_size = 0
-                self.ui.log = f'baixando {template} #{id_pedido} do servidor.'
+                self.ui.log = f'<span style="color: #000000;">baixando {template} #{id_pedido} do servidor.</span>'
                 os.popen(f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download"')
                 # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download'])
 
@@ -117,21 +150,20 @@ class IdeYouApi(QThread):
             else:
                 self.ui.log = f'<span style="color: #1976d2;">{template}#{id_pedido} já baixado, download ignorado.</span>'
 
-        except Exception as error:
-            self.ui.log = error
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao baixar {template}#{id_pedido}: {str(e)}</span>'
             return 500
         finally:
             QApplication.processEvents()
             return file_name
 
-    def print_order(self, id_pedido: int):
-        pedido = self.get_order_by_id(id_pedido)
+    def print_order(self, pedido: dict):
         template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
         _template = reverse_template_mapping.get(template, "Padrão")
 
         try:
             printer = self.ui.dPrinter
-            file_name = self.download_order(id_pedido, template)
+            file_name = self.download_order(pedido.get("id"), template)
 
             if not file_name == 500:
                 local_path = os.path.join(CONFIG["rootPTH"], file_name)
@@ -139,18 +171,19 @@ class IdeYouApi(QThread):
                 options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%printer%{printer}"'
                 gs_command = f'{CONFIG["command"]} {options} {local_path}'
 
-                self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{id_pedido} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={id_pedido}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+                self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{pedido.get("id")} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
                 os.popen(gs_command)
                 # subprocess.run(gs_command)
-        except Exception as error:
-            self.ui.log = error
-        # finally:
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao imprimir {template}#{pedido.get("id")}: {str(e)}</span>'
+        finally:
             # os.remove(local_path)
+            self.set_order_printed(pedido.get("id"), 1)
 
     def clean_up_files(self):
 
-        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'Pedido#\d+\.pdf', file)]
+        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'(recibo|bundle|comanda|pedido)#\d+\.(pdf|png)', file)]
 
         # Iterate through the list of files and delete them
         for file_name in files_to_delete:
@@ -158,6 +191,6 @@ class IdeYouApi(QThread):
             try:
                 os.remove(file_path)
             except Exception as e:
-                self.ui.log = f'<span style="color: #f77b36;">Erro ao apagar comanda/recibo: {str(e)}</span>'
+                self.ui.log = f'<span style="color: #f77b36;">Erro ao apagar {file_path}: {str(e)}</span>'
 
         self.ui.alert('Pronto!', 'Processo de limpeza de arquivos temporários realizado.')
