@@ -93,12 +93,15 @@ class IdeYouApi(QThread):
         url = f"{self.base_url}/webservices/pedidos/"
         payload: dict = {
             "dialog": True,
-            "id_status": id_status if not id_status == 402 else 0,
+            "id_status": id_status if not id_status == -1 else 0,
             "setStatusPedido": id_pedido,
             "comentario": "Pedido recusado pela loja." if id_status == 0 else None
         }
+        response = self.__request(payload, url, {"User-Agent": "Postman"})
 
-        return self.__request(payload, url, {"User-Agent": "Postman"})
+        print ("response => ", response)
+
+        return response
 
     def set_order_printed(self, id_pedido: int = 0, id_status: int = 0) -> dict:
         url = f"{self.base_url}/webservices/pedidos/"
@@ -183,7 +186,7 @@ class IdeYouApi(QThread):
 
     def clean_up_files(self):
 
-        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'(recibo|bundle|comanda|pedido)#\d+\.(pdf|png)', file)]
+        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'(recibo|bundle|comanda|pedido)#\d+\.(pdf|jpg|png)', file)]
 
         # Iterate through the list of files and delete them
         for file_name in files_to_delete:

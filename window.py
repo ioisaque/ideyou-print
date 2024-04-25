@@ -4,10 +4,9 @@ import sys
 import urllib
 import winreg as reg
 from datetime import datetime
-from time import sleep
 
 from PyQt6 import uic, QtGui, QtCore
-from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl, QRectF
+from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDesktopServices, QMovie, QIcon
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
@@ -204,6 +203,9 @@ class MainWindow(QMainWindow):
         if not self.api.check_app_version() == 200:
             self.alert("Nova versão disponível!", "Para atualizar este aplicativo, siga os passos:<br><br>1. Apague esta versão do seu computador.<br>2. Faça login no seu sistema.<br>3. No menu, clique em configurações -> pedidos.<br>4. Depois, clique no botão verde no topo IdeYou Print.<br>5. Pronto, terminando de baixar é só abrir e usar!<br><br> Qualquer dúvidas, procure seu gerente! :)")
             QTimer.singleShot(0, QApplication.quit)
+        else:
+            self.ui.tableWidget.cellClicked.connect(
+                lambda row, col: self.preview(int(self.ui.tableWidget.item(row, 0).text())))
 
     def check(self, reset: bool = False):
         self.ui.loading.show()
@@ -248,7 +250,6 @@ class MainWindow(QMainWindow):
         headers = ["", "Identificação", "Ações"]
         self.ui.tableWidget.setColumnCount(len(headers))
         self.ui.tableWidget.setHorizontalHeaderLabels(headers)
-        self.ui.tableWidget.cellClicked.connect(self.on_cell_clicked)
         self.ui.tableWidget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         for order in orders:
@@ -283,21 +284,21 @@ class MainWindow(QMainWindow):
             btn_print.clicked.connect(lambda _, pedido=order: self.print_order(pedido))
             btn_layout.addWidget(btn_print)
 
-            if order.get("status") == 402:
-            # Botão de dispensar
+            if int(order.get("status")) < 0:
+                # Botão de confirmar cancelamento
                 btn_cancel = QPushButton()
                 btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
                 btn_cancel.setIconSize(QtCore.QSize(15, 15))
-                btn_cancel.setStyleSheet("background-color: #0076F3;")
+                btn_cancel.setStyleSheet("background-color: #FFD22B;")
                 btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn_cancel.clicked.connect(lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 0))
+                btn_cancel.clicked.connect(lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, -1))
                 btn_layout.addWidget(btn_cancel)
-            elif order.get("status") == 404:
+            elif int(order.get("status")) == 404:
                 # Botão de aprovar
                 btn_approve = QPushButton()
                 btn_approve.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
                 btn_approve.setIconSize(QtCore.QSize(15, 15))
-                btn_approve.setStyleSheet("background-color: green;")
+                btn_approve.setStyleSheet("background-color: #33CC66;")
                 btn_approve.setCursor(Qt.CursorShape.PointingHandCursor)
                 btn_approve.clicked.connect(
                     lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 1))
@@ -311,20 +312,6 @@ class MainWindow(QMainWindow):
                 btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
                 btn_cancel.clicked.connect(
                     lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, 0))
-                btn_layout.addWidget(btn_cancel)
-            else:
-                # Botão de dispensar
-                btn_cancel = QPushButton()
-                btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
-                btn_cancel.setIconSize(QtCore.QSize(15, 15))
-                btn_cancel.setStyleSheet("background-color: #0076F3;")
-                btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn_cancel.clicked.connect(
-                    lambda _, id=order["id"]: [
-                        self.ui.tableWidget.removeRow(i)
-                        for i in range(self.ui.tableWidget.rowCount())
-                        if self.ui.tableWidget.item(i, 0).text() == str(id)
-                    ])
                 btn_layout.addWidget(btn_cancel)
 
             # Adicionando o layout de botões à célula
@@ -341,63 +328,61 @@ class MainWindow(QMainWindow):
             header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
             header.resizeSection(2, remaining_space)
 
-    def on_cell_clicked(self, row, column):
-        id_pedido = int(self.ui.tableWidget.item(row, 0).text())
-
-        try:
-            self.preview(id_pedido)
-        except Exception as e:
-            self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido #{id_pedido}. % {str(e)} %</span>'
-
     def preview(self, thing: str | int):
         self.ui.loading.show()
         QApplication.processEvents()
 
-        if isinstance(thing, str) and 'http' in thing:
-            # Create a QWebEngineView widget to display web content
-            webview = QWebEngineView()
-            self.ui.preview_area.setWidget(webview)
+        try:
+            # Remove the existing widget from the preview area
+            if self.ui.preview_area.widget() is not None:
+                self.ui.preview_area.widget().deleteLater()
 
-            # Load a URL into the QWebEngineView
-            url = urllib.parse.quote(thing, safe=':/?&=')
-            webview.setUrl(QUrl.fromLocalFile(url) if 'file://' in url else QUrl(url))
-        else:
-            pedido = self.api.get_order_by_id(int(thing))
-            template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
+            if isinstance(thing, str) and 'http' in thing:
+                # Create a QWebEngineView widget to display web content
+                webview = QWebEngineView()
+                self.ui.preview_area.setWidget(webview)
 
-            file_name = self.api.download_order(int(thing), template)
+                # Load a URL into the QWebEngineView
+                webview.setUrl(QUrl(thing))
+            else:
+                pedido = self.api.get_order_by_id(int(thing))
+                template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
 
-            self.log = f'Pré-visualizando - {file_name}'
+                file_name = self.api.download_order(int(thing), template)
 
-            # Create a QPdfView widget
-            pdf_view = QPdfView(self)
-            self.ui.preview_area.setWidget(pdf_view)
+                self.log = f'Pré-visualizando - {file_name}'
 
-            # Create a QPdfDocument instance with a parent
-            pdf_document = QPdfDocument(pdf_view)
+                # Create a QPdfDocument instance with a parent
+                pdf_document = QPdfDocument(self)
 
-            # Load the PDF from a file
-            pdf_document.load(os.path.join(CONFIG["rootPTH"], file_name))
+                # Load the PDF from a file
+                pdf_document.load(os.path.join(CONFIG["rootPTH"], file_name))
 
-            # Set the PDF document for the QPdfView
-            pdf_view.setDocument(pdf_document)
-            pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
+                # Create a QPdfView widget
+                pdf_view = QPdfView(self)
+                self.ui.preview_area.setWidget(pdf_view)
 
-            scrollbar_stylesheet = """
-            QScrollBar:vertical {
-                width: 0px;
-                border: none;
-                background: transparent;
-            }
-            """
-            pdf_view.setStyleSheet(scrollbar_stylesheet)
+                # Set the PDF document for the QPdfView
+                pdf_view.setDocument(pdf_document)
+                pdf_view.setZoomMode(QPdfView.ZoomMode.FitToWidth)
 
-            # pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
+                scrollbar_stylesheet = """
+                        QScrollBar:vertical {
+                            width: 0px;
+                            border: none;
+                            background: transparent;
+                        }
+                        """
+                pdf_view.setStyleSheet(scrollbar_stylesheet)
 
-        self.ui.loading.hide()
+                # pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
 
-        if isinstance(thing, int):
-            QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view, int(thing)))
+            self.ui.loading.hide()
+
+            if isinstance(thing, int):
+                QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view, int(thing)))
+        except Exception as e:
+            self.log = f'<span style="color: #f77b36;">Erro ao visualizar {thing}. % {str(e)} %</span>'
 
     def get_screenshot(self, widget, thing):
         self.log = f'tirando print do pedido #{thing}.'
