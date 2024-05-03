@@ -445,6 +445,8 @@ class MainWindow(QMainWindow):
         else:
             self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
 
+        self.ui.loading.hide()
+
     def set_order_status(self, row: int, id_pedido: int, id_status: int):
         try:
             response = self.api.set_order_status(id_pedido, id_status)
