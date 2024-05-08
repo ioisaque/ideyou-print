@@ -71,7 +71,7 @@ class IdeYouApi(QThread):
         v1 = float(CONFIG['version'])
         v2 = float(response.get("version"))
 
-        if not v1 == v2:
+        if v1 < v2:
             print(repr(response.get("version")), repr(CONFIG['version']))
             return 400
 

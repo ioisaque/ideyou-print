@@ -4,18 +4,20 @@ import json
 import tempfile
 import subprocess
 
-CONFIG = {}
-S_CONFIG = ["version",
-            "dStore",
-            "nCopies",
-            "dPrinter",
-            'lojas',
-            'sistema',
-            'deliveryTemplate',
-            'balcaoTemplate',
-            'printTypes',
-            'openOnLogon',
-            "queue"
+CONFIG = {
+    'version': "1.4"
+}
+S_CONFIG = [
+    "dStore",
+    "nCopies",
+    "dPrinter",
+    'lojas',
+    'sistema',
+    'deliveryTemplate',
+    'balcaoTemplate',
+    'printTypes',
+    'openOnLogon',
+    "queue"
 ]
 
 template_mapping = {
@@ -39,8 +41,6 @@ def save():
 def load():
     global CONFIG
     global S_CONFIG
-
-    CONFIG['version'] = "1.3"
 
     CONFIG['queue'] = []
     CONFIG["nCopies"] = 1

@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import urllib
 import winreg as reg
 from datetime import datetime
 
@@ -103,8 +102,8 @@ class MainWindow(QMainWindow):
 
                 # Add items to ComboBox
                 for loja in CONFIG['lojas']:
-                    nome = loja.get('nome')
                     id = loja.get('id')
+                    nome = loja.get('nome')
                     self.ui.select_loja.addItem(nome, id)
 
                 # Try to find the printer on the list
