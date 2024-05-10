@@ -171,7 +171,6 @@ class IdeYouApi(QThread):
     def print_order(self, pedido: dict):
         template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
         _template = reverse_template_mapping.get(template, "Padrão")
-        local_path = None
 
         try:
             printer = self.ui.dPrinter
