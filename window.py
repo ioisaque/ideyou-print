@@ -141,7 +141,6 @@ class MainWindow(QMainWindow):
             self.ui.btn_recheck.clicked.connect(lambda: self.check(True))
 
             self.ui.btn_print.clicked.connect(self.print_order)
-            self.ui.btn_cleanup.clicked.connect(self.api.clean_up_files)
 
             self.ui.input_url_sistema.textChanged.connect(self.save_settings)
             self.ui.input_id_pedido.textChanged.connect(self.limit_orderid_length)
@@ -207,6 +206,7 @@ class MainWindow(QMainWindow):
                 lambda row, col: self.preview(int(self.ui.tableWidget.item(row, 0).text())))
 
     def check(self, reset: bool = False):
+        self.preview(f'{self.api.base_url}/profile.php')
         self.ui.loading.show()
         QApplication.processEvents()
 
@@ -252,8 +252,6 @@ class MainWindow(QMainWindow):
         self.ui.tableWidget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
         for order in orders:
-            self.api.download_order(order.get("id"),
-                                    CONFIG["deliveryTemplate" if int(order.get("delivery")) else "balcaoTemplate"])
             rowPosition = self.ui.tableWidget.rowCount()
             self.ui.tableWidget.insertRow(rowPosition)
 
@@ -344,18 +342,13 @@ class MainWindow(QMainWindow):
                 # Load a URL into the QWebEngineView
                 webview.setUrl(QUrl(thing))
             else:
-                pedido = self.api.get_order_by_id(int(thing))
-                template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
-
-                file_name = self.api.download_order(int(thing), template)
-
-                self.log = f'Pré-visualizando - {file_name}'
+                file_path = self.api.download_order(int(thing), "preview")
 
                 # Create a QPdfDocument instance with a parent
                 pdf_document = QPdfDocument(self)
 
                 # Load the PDF from a file
-                pdf_document.load(os.path.join(CONFIG["rootPTH"], file_name))
+                pdf_document.load(file_path)
 
                 # Create a QPdfView widget
                 pdf_view = QPdfView(self)
@@ -374,21 +367,19 @@ class MainWindow(QMainWindow):
                         """
                 pdf_view.setStyleSheet(scrollbar_stylesheet)
 
-                # pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
+                pdf_view.setZoomMode(QPdfView.ZoomMode.FitInView)
 
             self.ui.loading.hide()
 
             if isinstance(thing, int):
-                QTimer.singleShot(500, lambda: self.get_screenshot(pdf_view, int(thing)))
+                QTimer.singleShot(750, lambda: self.get_screenshot(pdf_view, int(thing)))
         except Exception as e:
             self.log = f'<span style="color: #f77b36;">Erro ao visualizar {thing}. % {str(e)} %</span>'
 
     def get_screenshot(self, widget, thing):
-        self.log = f'tirando print do pedido #{thing}.'
-
         screenshot = widget.grab()
 
-        temp_file = os.path.join(CONFIG['rootPTH'], f'pedido#{thing}.jpg')
+        temp_file = os.path.join(CONFIG['rootPTH'], f'preview.jpg')
         screenshot.save(temp_file, 'jpg')
 
         clipboard = QApplication.clipboard()

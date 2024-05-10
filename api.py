@@ -1,6 +1,8 @@
 import logging
 import os
 import re
+import subprocess
+import tempfile
 from time import sleep
 
 import requests
@@ -130,18 +132,30 @@ class IdeYouApi(QThread):
         }
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
-        # self.ui.log = f'buscando a fila de pedidos no servidor.'
+        self.ui.log = f'<span style="color: #6C6C6C;">verificando a fila de pedidos no servidor.</span>'
         return response.get('data')
 
     def download_order(self, id_pedido: int, template: str) -> str | int:
-        file_name = f'{template}#{id_pedido}.pdf'
+        if template == 'preview':
+            file_name = f'preview.pdf'
+        else:
+            file_name = f'{template}#{id_pedido}.pdf'
+
+        file_size = 0
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
 
         try:
-            if not os.path.exists(local_path):
-                file_size = 0
-                self.ui.log = f'<span style="color: #000000;">baixando {template} #{id_pedido} do servidor.</span>'
-                os.popen(f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download"')
+            # Use a temporary file
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as temp_file:
+                local_path = temp_file.name
+
+                if os.path.exists(local_path):
+                    os.remove(local_path)  # Remove existing temp file (if any)
+
+                command = f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download"'
+                self.ui.log = f'<span style="color: #FFD22B;">#=> {command}</span>'
+                os.popen(command)
+
                 # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download'])
 
                 while file_size < 5120:
@@ -150,50 +164,34 @@ class IdeYouApi(QThread):
                         file_size = os.path.getsize(local_path)
                     except FileNotFoundError:
                         sleep(0.1)
-            else:
-                self.ui.log = f'<span style="color: #1976d2;">{template}#{id_pedido} já baixado, download ignorado.</span>'
 
         except Exception as e:
             self.ui.log = f'<span style="color: #f77b36;">Erro ao baixar {template}#{id_pedido}: {str(e)}</span>'
             return 500
         finally:
             QApplication.processEvents()
-            return file_name
+            return local_path
 
     def print_order(self, pedido: dict):
         template = CONFIG["deliveryTemplate" if int(pedido.get("delivery")) else "balcaoTemplate"]
         _template = reverse_template_mapping.get(template, "Padrão")
+        local_path = None
 
         try:
             printer = self.ui.dPrinter
-            file_name = self.download_order(pedido.get("id"), template)
+            local_path = self.download_order(pedido.get("id"), template)
 
-            if not file_name == 500:
-                local_path = os.path.join(CONFIG["rootPTH"], file_name)
-
+            if not local_path == 500:
                 options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%printer%{printer}"'
                 gs_command = f'{CONFIG["command"]} {options} {local_path}'
 
-                self.ui.log = f'#=> <span style="color: #0000FF;">PEDIDO #{pedido.get("id")} RECEBIDO!</span> {CONFIG["nCopies"]}x {_template}, [{CONFIG["dPrinter"]}]. <a href="{self.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+                self.ui.log = f'<span style="color: #0076F3;">#=> {gs_command}</span>'
 
-                os.popen(gs_command)
                 # subprocess.run(gs_command)
+                os.popen(gs_command)
+
         except Exception as e:
             self.ui.log = f'<span style="color: #f77b36;">Erro ao imprimir {template}#{pedido.get("id")}: {str(e)}</span>'
         finally:
             # os.remove(local_path)
             self.set_order_printed(pedido.get("id"), 1)
-
-    def clean_up_files(self):
-
-        files_to_delete = [file for file in os.listdir(CONFIG["rootPTH"]) if re.match(r'(recibo|bundle|comanda|pedido)#\d+\.(pdf|jpg|png)', file)]
-
-        # Iterate through the list of files and delete them
-        for file_name in files_to_delete:
-            file_path = os.path.join(CONFIG["rootPTH"], file_name)
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                self.ui.log = f'<span style="color: #f77b36;">Erro ao apagar {file_path}: {str(e)}</span>'
-
-        self.ui.alert('Pronto!', 'Processo de limpeza de arquivos temporários realizado.')

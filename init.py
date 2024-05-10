@@ -5,7 +5,7 @@ import tempfile
 import subprocess
 
 CONFIG = {
-    'version': "1.4"
+    'version': "1.5"
 }
 S_CONFIG = [
     "dStore",
