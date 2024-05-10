@@ -136,12 +136,8 @@ class IdeYouApi(QThread):
         return response.get('data')
 
     def download_order(self, id_pedido: int, template: str) -> str | int:
-        if template == 'preview':
-            file_name = f'preview.pdf'
-        else:
-            file_name = f'{template}#{id_pedido}.pdf'
-
         file_size = 0
+        file_name = f'{template}#{id_pedido}.pdf'
         local_path = os.path.join(CONFIG["rootPTH"], file_name)
 
         try:
