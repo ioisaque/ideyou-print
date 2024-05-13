@@ -3,6 +3,7 @@ import re
 import sys
 import winreg as reg
 from datetime import datetime
+from time import sleep
 
 from PyQt6 import uic, QtGui, QtCore
 from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl
@@ -343,6 +344,8 @@ class MainWindow(QMainWindow):
                 webview.setUrl(QUrl(thing))
             else:
                 file_path = self.api.download_order(int(thing), "preview")
+
+                sleep(1)
 
                 # Create a QPdfDocument instance with a parent
                 pdf_document = QPdfDocument(self)
