@@ -8,7 +8,7 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=[],
-    datas=[('assets/favicon.ico', 'assets'), ('assets/main.ui', 'assets'), ('assets/gs_not_found.ui', 'assets'), ('assets/logo.png', 'assets'), ('assets/poweredby.png', 'assets'), ('assets/load-bars.gif', 'assets'), ('assets/cloud_link.png', 'assets'), ('assets/printer.png', 'assets'), ('assets/queue_check.png', 'assets'), ('assets/refresh.png', 'assets'), ('assets/slotmachine.wav', 'assets'), ('assets/trash_folder.png', 'assets'), ('assets/thumbs_up.png', 'assets'), ('assets/thumbs_down.png', 'assets')],
+    datas=[('assets/favicon.ico', 'assets'), ('assets/main.ui', 'assets'), ('assets/gs_not_found.ui', 'assets'), ('assets/logo.png', 'assets'), ('assets/poweredby.png', 'assets'), ('assets/load-bars.gif', 'assets'), ('assets/cloud_link.png', 'assets'), ('assets/locked.png', 'assets'), ('assets/unlocked.png', 'assets'), ('assets/printer.png', 'assets'), ('assets/queue_check.png', 'assets'), ('assets/refresh.png', 'assets'), ('assets/slotmachine.wav', 'assets'), ('assets/trash_folder.png', 'assets'), ('assets/thumbs_up.png', 'assets'), ('assets/thumbs_down.png', 'assets')],
     hiddenimports=['PyQt6', 'Flask', 'waitress'],
     hookspath=[],
     hooksconfig={},

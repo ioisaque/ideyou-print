@@ -138,6 +138,7 @@ class MainWindow(QMainWindow):
                 self.ui.select_modelo_delivery.setCurrentIndex(0)
 
             # CONNECT ALL THE BEHAVIOR TO ITS DESIGNATED FUNCTION
+            self.ui.btn_lock.clicked.connect(self.toggleUI)
             self.ui.btn_reload.clicked.connect(self.load_settings)
             self.ui.btn_recheck.clicked.connect(lambda: self.check(True))
 
@@ -205,6 +206,7 @@ class MainWindow(QMainWindow):
         else:
             self.ui.tableWidget.cellClicked.connect(
                 lambda row, col: self.preview(int(self.ui.tableWidget.item(row, 0).text())))
+            self.toggleUI()
 
     def check(self, reset: bool = False):
         self.preview(f'{self.api.base_url}/profile.php')
@@ -395,6 +397,29 @@ class MainWindow(QMainWindow):
         self.ui.loading.show()
         QMessageBox.information(self, title, message)
         self.ui.loading.hide()
+
+    def toggleUI(self):
+        # Get the current enabled state of one of the widgets
+        enabled_state = self.ui.input_url_sistema.isEnabled()
+
+        # Toggle the state
+        new_state = not enabled_state
+
+        # Set the new state to all inputs, checkboxes, and selects
+        self.ui.input_url_sistema.setEnabled(new_state)
+        self.ui.select_loja.setEnabled(new_state)
+        self.ui.select_printer.setEnabled(new_state)
+        self.ui.select_printqtd.setEnabled(new_state)
+        self.ui.select_modelo_balcao.setEnabled(new_state)
+        self.ui.select_modelo_delivery.setEnabled(new_state)
+        self.ui.cb_print_balcao.setEnabled(new_state)
+        self.ui.cb_print_delivery.setEnabled(new_state)
+        self.ui.cb_open_on_logon.setEnabled(new_state)
+
+        if new_state:
+            self.ui.btn_lock.setIcon(QIcon(os.path.join(assets_path, "unlocked.png")))  # Set the icon to an unlocked icon
+        else:
+            self.ui.btn_lock.setIcon(QIcon(os.path.join(assets_path, "locked.png")))  # Set the icon to a locked icon
 
     def downloadGS(self):
         file_url = QUrl(CONFIG['gslink'])
