@@ -70,6 +70,10 @@ class IdeYouApi(QThread):
 
         response = self.__request(None, url, {"User-Agent": "Postman"}, "GET").get('data')
 
+        # Check if the response is None or if 'data' is not in the response
+        if response is None or 'version' not in response:
+            return 200
+
         v1 = float(CONFIG['version'])
         v2 = float(response.get("version"))
 
@@ -148,11 +152,11 @@ class IdeYouApi(QThread):
                 if os.path.exists(local_path):
                     os.remove(local_path)  # Remove existing temp file (if any)
 
-                command = f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download"'
+                command = f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download=true"'
                 self.ui.log = f'<span style="color: #FFD22B;">#=> {command}</span>'
                 os.popen(command)
 
-                # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download'])
+                # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download=true'])
 
                 while file_size < 5120:
                     sleep(0.1)
@@ -177,13 +181,19 @@ class IdeYouApi(QThread):
             local_path = self.download_order(pedido.get("id"), template)
 
             if not local_path == 500:
-                options = f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"' if CONFIG['isMacOS'] else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="{CONFIG["nCopies"]}" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%printer%{printer}"'
-                gs_command = f'{CONFIG["command"]} {options} {local_path}'
+                for i in range(1 if int(pedido.get("status")) <= 0 else int(CONFIG["nCopies"])):
+                    options = (
+                        f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="1" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"'
+                        if CONFIG['isMacOS']
+                        else f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="1" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%printer%{printer}"'
+                    )
+                    gs_command = f'{CONFIG["command"]} {options} {local_path}'
 
-                self.ui.log = f'<span style="color: #0076F3;">#=> {gs_command}</span>'
+                    self.ui.log = f'<span style="color: #0076F3;">#=> {gs_command}</span>'
 
-                # subprocess.run(gs_command)
-                os.popen(gs_command)
+                    # Execute the command for each copy
+                    os.popen(gs_command)
+                    # subprocess.run(gs_command)
 
         except Exception as e:
             self.ui.log = f'<span style="color: #f77b36;">Erro ao imprimir {template}#{pedido.get("id")}: {str(e)}</span>'

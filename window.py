@@ -549,6 +549,39 @@ class MainWindow(QMainWindow):
 
         toggle_logon_behavior(CONFIG['openOnLogon'])
 
+    def closeEvent(self, event):
+        # Cria uma caixa de mensagem de confirmação
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle('Atenção!')
+        msg_box.setText('Tem certeza de que deseja sair?\n\nOs pedidos não serão mais impressos automaticamente!')
+
+        # Define o ícone
+        msg_box.setIcon(QMessageBox.Icon.Question)
+
+        # Cria botões personalizados
+        yes_button = QPushButton('Sim, quero sair!')
+        no_button = QPushButton('Não, vou ficar!')
+
+        # Define as cores de fundo dos botões usando estilos
+        yes_button.setStyleSheet("font-weight: bold; padding: 2px 5px; background-color: red; color: white;")
+        no_button.setStyleSheet("font-weight: bold; padding: 2px 5px; background-color: green; color: white;")
+
+        # Adiciona os botões à caixa de mensagem
+        msg_box.addButton(yes_button, QMessageBox.ButtonRole.YesRole)
+        msg_box.addButton(no_button, QMessageBox.ButtonRole.NoRole)
+
+        # Define o botão padrão (focado)
+        msg_box.setDefaultButton(no_button)
+
+        # Exibe a caixa de mensagem e espera pela resposta
+        msg_box.exec()
+
+        # Verifica a resposta do usuário
+        if msg_box.clickedButton() == yes_button:
+            event.accept()  # Fecha a janela
+        else:
+            event.ignore()  # Cancela o fechamento
+
     @property
     def log(self):
         return self.ui.log_box.toHtml()
