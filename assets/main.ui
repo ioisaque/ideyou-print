@@ -65,7 +65,7 @@ background: #FFF;</string>
      <enum>QTabWidget::North</enum>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="elideMode">
      <enum>Qt::ElideMiddle</enum>
@@ -79,9 +79,9 @@ background: #FFF;</string>
     <property name="tabsClosable">
      <bool>false</bool>
     </property>
-    <widget class="QWidget" name="tab1">
+    <widget class="QWidget" name="main">
      <attribute name="title">
-      <string>Script</string>
+      <string>Início</string>
      </attribute>
      <widget class="QGroupBox" name="gpb_main">
       <property name="geometry">
@@ -550,7 +550,7 @@ background-color: transparent;</string>
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab2">
+    <widget class="QWidget" name="settings">
      <attribute name="title">
       <string>Configuração</string>
      </attribute>
