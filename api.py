@@ -68,11 +68,13 @@ class IdeYouApi(QThread):
     def check_app_version(self) -> int:
         url = f"{self.base_url}/webservices/settings/?name=autoprint"
 
-        response = self.__request(None, url, {"User-Agent": "Postman"}, "GET").get('data')
+        response = self.__request(None, url, {"User-Agent": "Postman"}, "GET")
 
         # Check if the response is None or if 'data' is not in the response
         if response is None or 'version' not in response:
             return 200
+        else:
+            response = response.get('data')
 
         v1 = float(CONFIG['version'])
         v2 = float(response.get("version"))
@@ -105,8 +107,6 @@ class IdeYouApi(QThread):
         }
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
-        print ("response => ", response)
-
         return response
 
     def set_order_printed(self, id_pedido: int = 0, id_status: int = 0) -> dict:
@@ -137,7 +137,12 @@ class IdeYouApi(QThread):
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         self.ui.log = f'<span style="color: #6C6C6C;">verificando a fila de pedidos no servidor.</span>'
-        return response.get('data')
+
+        # Return an empty list if the response is not successful or doesn't contain 'data'
+        if response == 0 or not isinstance(response, dict) or 'data' not in response:
+            return []
+
+        return response.get('data', [])
 
     def download_order(self, id_pedido: int, template: str) -> str | int:
         file_size = 0

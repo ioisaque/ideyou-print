@@ -342,6 +342,13 @@ class MainWindow(QMainWindow):
                 webview = QWebEngineView()
                 self.ui.preview_area.setWidget(webview)
 
+                def handle_load_finished(success: bool):
+                    if not success:
+                        webview.setUrl(QUrl(f"https://cdn.isaque.it/error/502/"))
+
+                # Connect the loadFinished signal to the custom slot
+                webview.loadFinished.connect(handle_load_finished)
+
                 # Load a URL into the QWebEngineView
                 webview.setUrl(QUrl(thing))
             else:
@@ -591,7 +598,7 @@ class MainWindow(QMainWindow):
         print(re.sub('<[^<]+?>', '', l))
 
         old = self.log
-        self.ui.log_box.setText(f'<p style="margin: 0 !important;">{l}</p>{old}')
+        self.ui.log_box.setText(f'<p style="margin: 0 !important;">{datetime.now().strftime("%H:%M:%S")} - {l}</p>{old}')
 
     @property
     def last_checked(self):
