@@ -36,8 +36,7 @@
    <bool>false</bool>
   </property>
   <property name="styleSheet">
-   <string notr="true">color: #000000; 
-background: #FFF;</string>
+   <string notr="true">color: #000000;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTabWidget" name="tabWidget">
@@ -482,6 +481,9 @@ background-color: transparent;</string>
          <height>330</height>
         </rect>
        </property>
+       <property name="styleSheet">
+        <string notr="true">background: transparent;</string>
+       </property>
        <property name="frameShape">
         <enum>QFrame::Box</enum>
        </property>
@@ -530,7 +532,7 @@ background-color: transparent;</string>
        <bool>true</bool>
       </property>
       <property name="styleSheet">
-       <string notr="true">background: #FFF;</string>
+       <string notr="true">background: transparent;</string>
       </property>
       <property name="frameShape">
        <enum>QFrame::Box</enum>
@@ -1019,7 +1021,9 @@ background-color: transparent;</string>
        <enum>Qt::NoContextMenu</enum>
       </property>
       <property name="styleSheet">
-       <string notr="true">font-weight: bold; color: #71797E;</string>
+       <string notr="true">color: #71797E;
+font-weight: bold;
+background: transparent;</string>
       </property>
       <property name="inputMethodHints">
        <set>Qt::ImhNone</set>
