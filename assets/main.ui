@@ -930,7 +930,7 @@ background-color: transparent;</string>
         <string notr="true">background: none;</string>
        </property>
        <property name="text">
-        <string>Iniciar com o Computador</string>
+        <string>Iniciar c/ PC</string>
        </property>
        <property name="checked">
         <bool>false</bool>
@@ -987,6 +987,31 @@ background-color: transparent;</string>
          <width>28</width>
          <height>28</height>
         </size>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="cb_auto_screenshot">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>145</x>
+         <y>40</y>
+         <width>130</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: none;</string>
+       </property>
+       <property name="text">
+        <string>Print automático</string>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
        </property>
       </widget>
      </widget>

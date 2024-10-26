@@ -36,7 +36,7 @@ class IdeYouApi(QThread):
         if base_url.endswith('/'):
             base_url = base_url[:-1]
 
-        # base_url = f'{base_url}/webservices'
+        # base_url = f'{base_url}/api'
 
         return base_url
 
@@ -66,7 +66,7 @@ class IdeYouApi(QThread):
                 return data
 
     def check_app_version(self) -> int:
-        url = f"{self.base_url}/webservices/settings/?name=autoprint"
+        url = f"{self.base_url}/api/settings/?name=autoprint"
 
         response = self.__request(None, url, {"User-Agent": "Postman"}, "GET")
 
@@ -90,36 +90,35 @@ class IdeYouApi(QThread):
             if order['id'] == id_pedido:
                 return order
 
-        url = f"{self.base_url}/webservices/pedidos/"
+        url = f"{self.base_url}/api/pedidos/"
         payload: dict = {
             "id": id_pedido
         }
 
         return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
 
-    def set_order_status(self, id_pedido: int = 0, id_status: int = 0) -> dict:
-        url = f"{self.base_url}/webservices/pedidos/"
+    def set_order_status(self, id: int = 0, status: int = 0) -> dict:
+        url = f"{self.base_url}/api/pedidos/"
         payload: dict = {
-            "dialog": True,
-            "id_status": id_status if not id_status == -1 else 0,
-            "setStatusPedido": id_pedido,
-            "comentario": "Pedido recusado pela loja." if id_status == 0 else None
+            "id": id,
+            "status": status,
+            "comentario": "Pedido recusado pela loja." if status == 0 else None
         }
         response = self.__request(payload, url, {"User-Agent": "Postman"})
 
         return response
 
-    def set_order_printed(self, id_pedido: int = 0, id_status: int = 0) -> dict:
-        url = f"{self.base_url}/webservices/pedidos/"
+    def set_order_printed(self, id: int = 0) -> dict:
+        url = f"{self.base_url}/api/pedidos/"
         payload: dict = {
-            "id_status": id_status,
-            "setPrintedPedido": id_pedido
+            "id": id,
+            "printed": 1
         }
 
         return self.__request(payload, url, {"User-Agent": "Postman"})
 
     def get_stores(self) -> list:
-        url = f"{self.base_url}/webservices/lojas/"
+        url = f"{self.base_url}/api/lojas/"
         payload: dict = {
             "listar": "todos"
         }
@@ -129,7 +128,7 @@ class IdeYouApi(QThread):
         return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
 
     def get_wating_orders(self, id_loja: int = 0) -> list:
-        url = f"{self.base_url}/webservices/pedidos/"
+        url = f"{self.base_url}/api/pedidos/"
         payload: dict = {
             "listar": "queue",
             "id_loja": int(id_loja if id_loja > 0 else CONFIG["dStore"])
@@ -186,7 +185,7 @@ class IdeYouApi(QThread):
             local_path = self.download_order(pedido.get("id"), template)
 
             if not local_path == 500:
-                for i in range(1 if int(pedido.get("status")) <= 0 else int(CONFIG["nCopies"])):
+                for i in range(1 if int(pedido.get("status")) == 0 else int(CONFIG["nCopies"])):
                     options = (
                         f'-dPrinted -dBATCH -dNOPAUSE -dQUIET -dNOSAFER -dNumCopies="1" -sDEVICE="{CONFIG["sDevice"]}" -sOutputFile="%|lp{printer}"'
                         if CONFIG['isMacOS']
@@ -204,4 +203,4 @@ class IdeYouApi(QThread):
             self.ui.log = f'<span style="color: #f77b36;">Erro ao imprimir {template}#{pedido.get("id")}: {str(e)}</span>'
         finally:
             # os.remove(local_path)
-            self.set_order_printed(pedido.get("id"), 1)
+            self.set_order_printed(pedido.get("id"))

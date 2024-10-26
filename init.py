@@ -5,7 +5,7 @@ import tempfile
 import subprocess
 
 CONFIG = {
-    'version': "1.8"
+    'version': "2.0"
 }
 S_CONFIG = [
     "dStore",
@@ -17,6 +17,7 @@ S_CONFIG = [
     'balcaoTemplate',
     'printTypes',
     'openOnLogon',
+    'takeScreenShot',
     "queue"
 ]
 
@@ -50,6 +51,7 @@ def load():
     CONFIG['sistema'] = "http://sistema.ideyou.com.br"
 
     CONFIG["openOnLogon"] = 0
+    CONFIG["takeScreenShot"] = 1
     CONFIG['deliveryTemplate'] = "bundle"
     CONFIG['balcaoTemplate'] = "comanda"
     CONFIG['printTypes'] = [0, 1]

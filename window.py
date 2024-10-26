@@ -118,6 +118,7 @@ class MainWindow(QMainWindow):
             self.ui.cb_print_balcao.setChecked(0 in CONFIG['printTypes'])
             self.ui.cb_print_delivery.setChecked(1 in CONFIG['printTypes'])
             self.ui.cb_open_on_logon.setChecked(CONFIG['openOnLogon'])
+            self.ui.cb_auto_screenshot.setChecked(CONFIG['takeScreenShot'])
 
             # Try to find the template on the list
             template = reverse_template_mapping.get(CONFIG['balcaoTemplate'], "bundle")
@@ -156,6 +157,7 @@ class MainWindow(QMainWindow):
             self.ui.cb_print_balcao.stateChanged.connect(self.save_settings)
             self.ui.cb_print_delivery.stateChanged.connect(self.save_settings)
             self.ui.cb_open_on_logon.stateChanged.connect(self.save_settings)
+            self.ui.cb_auto_screenshot.stateChanged.connect(self.save_settings)
 
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
@@ -266,11 +268,25 @@ class MainWindow(QMainWindow):
             # Set the text for the first column as "Pedido ID do dia data_hora"
             pedido_text = f'Pedido {order["id"]} para {order["data_hora"]}'
             pedido_item = QTableWidgetItem(pedido_text)
+
+            if int(order.get("status")) == 0:
+                pedido_item.setForeground(QtGui.QColor("#FFF"))
+                pedido_item.setBackground(QtGui.QColor("#F00"))
+            elif int(order.get("status")) == -1:
+                pedido_item.setForeground(QtGui.QColor("#FFF"))
+                pedido_item.setBackground(QtGui.QColor("#33CC66"))
+            elif order.get("alterado_em"):
+                pedido_item.setForeground(QtGui.QColor("#000"))
+                pedido_item.setBackground(QtGui.QColor("#FFD22B"))
+            else:
+                pedido_item.setForeground(QtGui.QColor("#000"))
+                pedido_item.setBackground(QtGui.QColor("#FFF"))
+
             self.ui.tableWidget.setItem(rowPosition, 1, pedido_item)
 
             # Set the tooltip for the first column item
-            criado_tooltip = f'Criado em: {order["criado_em"]}'
-            pedido_item.setToolTip(criado_tooltip)
+            tooltip_txt = f'Alterado em: {order["alterado_em"]}' if order["alterado_em"] else f'Criado em: {order["criado_em"]}'
+            pedido_item.setToolTip(tooltip_txt)
 
             # Botões na coluna ações
             btn_layout = QHBoxLayout()
@@ -284,16 +300,7 @@ class MainWindow(QMainWindow):
             btn_print.clicked.connect(lambda _, pedido=order: self.print_order(pedido))
             btn_layout.addWidget(btn_print)
 
-            if int(order.get("status")) < 0:
-                # Botão de confirmar cancelamento
-                btn_cancel = QPushButton()
-                btn_cancel.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
-                btn_cancel.setIconSize(QtCore.QSize(15, 15))
-                btn_cancel.setStyleSheet("background-color: #FFD22B;")
-                btn_cancel.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn_cancel.clicked.connect(lambda _, row=rowPosition, id=order["id"]: self.set_order_status(row, id, -1))
-                btn_layout.addWidget(btn_cancel)
-            elif int(order.get("status")) == 404:
+            if int(order.get("status")) == -1:
                 # Botão de aprovar
                 btn_approve = QPushButton()
                 btn_approve.setIcon(QIcon(os.path.join(assets_path, "thumbs_up.png")))
@@ -389,6 +396,9 @@ class MainWindow(QMainWindow):
             self.log = f'<span style="color: #f77b36;">Erro ao visualizar {thing}. % {str(e)} %</span>'
 
     def get_screenshot(self, widget, thing):
+        if not CONFIG['takeScreenShot']:
+            return
+
         screenshot = widget.grab()
 
         temp_file = os.path.join(CONFIG['rootPTH'], f'preview.jpg')
@@ -422,6 +432,7 @@ class MainWindow(QMainWindow):
         self.ui.cb_print_balcao.setEnabled(new_state)
         self.ui.cb_print_delivery.setEnabled(new_state)
         self.ui.cb_open_on_logon.setEnabled(new_state)
+        self.ui.cb_auto_screenshot.setEnabled(new_state)
 
         if new_state:
             self.ui.btn_lock.setIcon(QIcon(os.path.join(assets_path, "unlocked.png")))  # Set the icon to an unlocked icon
@@ -551,9 +562,9 @@ class MainWindow(QMainWindow):
         CONFIG['deliveryTemplate'] = template_mapping.get(self.ui.select_modelo_delivery.currentText(), "")
 
         CONFIG['openOnLogon'] = self.ui.cb_open_on_logon.isChecked()
+        CONFIG['takeScreenShot'] = self.ui.cb_auto_screenshot.isChecked()
 
         save()
-
         toggle_logon_behavior(CONFIG['openOnLogon'])
 
     def closeEvent(self, event):
@@ -699,6 +710,16 @@ class MainWindow(QMainWindow):
     @openOnLogon.setter
     def openOnLogon(self, value):
         CONFIG["openOnLogon"] = value
+
+        save()
+
+    @property
+    def takeScreenShot(self):
+        return self.ui.cb_auto_screenshot.isChecked()
+
+    @takeScreenShot.setter
+    def takeScreenShot(self, value):
+        CONFIG["takeScreenShot"] = value
 
         save()
 
