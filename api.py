@@ -55,12 +55,16 @@ class IdeYouApi(QThread):
                 response = requests.request(method=method, url=url, json=payload, headers=headers)
                 data = response.json()
 
+                if 'data' not in data:
+                    raise ValueError("Response does not contain 'data' attribute")
+
             except Exception as e:
                 logging.error(f'Impossible to get the response from server: {e.__repr__()}')
                 logging.error(f'Waiting {self.__connection_retry_timeout} - for retry')
                 sleep(self.__connection_retry_timeout)
 
-                if i > self.__retry_amount:
+                if i >= self.__retry_amount - 1:
+                    self.ui.preview("https://cdn.isaque.it/error/502/")
                     break
             finally:
                 return data
