@@ -518,6 +518,28 @@ background-color: transparent;</string>
         <bool>false</bool>
        </attribute>
       </widget>
+      <widget class="QLabel" name="loading">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>470</width>
+         <height>370</height>
+        </rect>
+       </property>
+       <property name="autoFillBackground">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background: rgba(255, 255, 255, .8);</string>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
      </widget>
      <widget class="QScrollArea" name="preview_area">
       <property name="geometry">
@@ -1150,28 +1172,6 @@ background-color: #d01c35;</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="loading">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>800</width>
-      <height>550</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background: rgba(255, 255, 255, .8);</string>
-    </property>
-    <property name="text">
-     <string>...</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>

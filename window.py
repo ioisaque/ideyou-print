@@ -7,13 +7,13 @@ from time import sleep
 
 from PyQt6 import uic, QtGui, QtCore
 from PyQt6.QtCore import QEvent, Qt, QTimer, QUrl
-from PyQt6.QtGui import QDesktopServices, QMovie, QIcon
+from PyQt6.QtGui import QDesktopServices, QMovie, QIcon, QPixmap
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtPdfWidgets import QPdfView
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QTableWidgetItem, QPushButton, QHBoxLayout, QWidget, \
-    QTableWidget, QHeaderView
+    QTableWidget, QHeaderView, QLabel, QSizePolicy, QScrollArea, QVBoxLayout
 
 from api import IdeYouApi
 from init import CONFIG, load, reverse_template_mapping, save, template_mapping
@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
                 self.ui.select_loja.clear()
                 self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
-                self.preview(f'{self.api.base_url}/profile.php')
+                self.preview(assets_path + "/waitingurl.png")
 
                 self.ui.loading.hide()
             else:
@@ -162,7 +162,7 @@ class MainWindow(QMainWindow):
             self.ui.log_box.setOpenExternalLinks(True)  # Enable clickable links
             self.ui.input_id_pedido.installEventFilter(self)
 
-            self.preview(f'{self.api.base_url}/profile.php')
+            self.preview(assets_path + "/connected.png")
 
             # Create a QTimer to periodically trigger the check function
             self.timer = QTimer(self)
@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
             self.toggleUI()
 
     def check(self, reset: bool = False):
-        self.preview(f'{self.api.base_url}/profile.php')
+        self.preview(assets_path + "/connected.png")
         self.ui.loading.show()
         QApplication.processEvents()
 
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
                 if not int(pedido.get("printed")) == 1:
                     self.print_order(pedido)
                 else:
-                    self.log = f'<span style="color: #FF0000;">#=> ATENÇÃO AO PEDIDO #{pedido.get("id")}!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
+                    self.log = f'<span style="color: #FF0000;">ATENÇÃO AO PEDIDO {pedido.get("id")}!</span> <a href="{self.api.base_url}/?do=pedidos&action=view&id={pedido.get("id")}" style="color: #1976d2; cursor: pointer;">Visualizar</a>'
 
         if len(queue):
             # Play the sound effect
@@ -351,13 +351,34 @@ class MainWindow(QMainWindow):
 
                 def handle_load_finished(success: bool):
                     if not success:
-                        webview.setUrl(QUrl(f"https://cdn.isaque.it/error/502/"))
+                        self.preview(assets_path + "/desconnected.png")
 
                 # Connect the loadFinished signal to the custom slot
                 webview.loadFinished.connect(handle_load_finished)
 
                 # Load a URL into the QWebEngineView
                 webview.setUrl(QUrl(thing))
+            elif isinstance(thing, str) and (thing.endswith('.jpg') or thing.endswith('.png') or thing.endswith('.gif')):
+                label = QLabel()
+                pixmap = QPixmap(thing)
+
+                container_width = self.ui.preview_area.width() - 30
+                container_height = self.ui.preview_area.height()
+
+                scaled_pixmap = pixmap.scaled(container_width, container_height, Qt.AspectRatioMode.KeepAspectRatio,
+                                              Qt.TransformationMode.SmoothTransformation)
+
+                label.setPixmap(scaled_pixmap)
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                label.setFixedSize(scaled_pixmap.size())
+                layout = QVBoxLayout()
+                layout.addWidget(label, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+
+                container_widget = QWidget()
+                container_widget.setLayout(layout)
+                container_widget.setStyleSheet("background-color: #FF5356;")
+
+                self.ui.preview_area.setWidget(container_widget)
             else:
                 file_path = self.api.download_order(int(thing), "preview")
 
@@ -479,7 +500,7 @@ class MainWindow(QMainWindow):
         if pedido:
             self.api.print_order(pedido)
         else:
-            self.log = f'<span style="color: #f77b36;">Erro ao imprimir [{id_pedido}], pedido não encontrado.</span>'
+            self.log = f'<span style="color: #f77b36;">Erro ao imprimir pedido {id_pedido}, não encontrado!</span>'
 
         self.ui.loading.hide()
 
@@ -515,7 +536,7 @@ class MainWindow(QMainWindow):
                 try:
                     self.preview(id_pedido)
                 except Exception as e:
-                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido #{id_pedido}: {str(e)}.</span>'
+                    self.log = f'<span style="color: #f77b36;">Erro ao visualizar pedido {id_pedido}: {str(e)}.</span>'
                 return True  # Event handled
         return super().eventFilter(obj, event)
 
@@ -536,7 +557,7 @@ class MainWindow(QMainWindow):
         self.ui.select_loja.clear()
         self.ui.select_loja.addItems([loja.get('nome') for loja in CONFIG['lojas']])
 
-        self.preview(f'{self.api.base_url}/profile.php')
+        self.preview(assets_path + "/waitingurl.png")
 
         self.ui.loading.hide()
 

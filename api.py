@@ -1,7 +1,4 @@
-import logging
 import os
-import re
-import subprocess
 import tempfile
 from time import sleep
 
@@ -18,8 +15,6 @@ class IdeYouApi(QThread):
         super(IdeYouApi, self).__init__()
 
         self.ui = ui
-        self.__retry_amount = 3
-        self.__connection_retry_timeout = 5
 
     @property
     def base_url(self) -> str:
@@ -40,112 +35,165 @@ class IdeYouApi(QThread):
 
         return base_url
 
-    def __request(self, payload, url, headers=None, method: str = "POST") -> dict:
-        data = []
+    def __request(self, payload: any, url, method: str = "POST", headers=None, timeout: int = 10) -> dict | None:
+        data = {"code": 500, "data": [], "params": payload, "message": "Internal Server Error"}
 
         if CONFIG["sistema"] == '':
             return self.ui.alert('Erro 400',
                                  'Caminho do sistema indefinido, informe a\nURL do seu sistema para utilizar o serviço.')
 
         if headers is None:
-            headers = {}
+            headers = {"User-Agent": "IdeYouPrint"}
 
-        for i in range(self.__retry_amount):
-            try:
-                response = requests.request(method=method, url=url, json=payload, headers=headers)
-                data = response.json()
+        try:
+            nome_loja = next((loja.get('nome') for loja in CONFIG["lojas"] if loja.get('id') == CONFIG["dStore"]), 'Unknown')
 
-                if 'data' not in data:
-                    raise ValueError("Response does not contain 'data' attribute")
+            if timeout == 0:
+                raise TimeoutError("Forced timeout as timeout parameter is set to 0")
+            
+            response = requests.request(method=method, url=url, json=payload, headers=headers, timeout=timeout)
+            data = response.json()
 
-            except Exception as e:
-                logging.error(f'Impossible to get the response from server: {e.__repr__()}')
-                logging.error(f'Waiting {self.__connection_retry_timeout} - for retry')
-                sleep(self.__connection_retry_timeout)
+            if 'data' not in data:
+                raise ValueError("Response does not contain 'data' attribute")
 
-                if i >= self.__retry_amount - 1:
-                    self.ui.preview("https://cdn.isaque.it/error/502/")
-                    break
-            finally:
-                return data
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">ERROR: {str(e)}</span>'
+            # self.send_whatsapp(f'IdeYouPrint error on `{nome_loja}`: {str(e)}')
+        finally:
+            return data
+
+    def send_whatsapp(self, mensagem: str, number: str = "447443695748") -> list | dict:
+        try:
+            print(mensagem)
+            url = f"https://isaque.it/whatsapp/webservices/envios/"
+            payload = {
+                "session_id": "IDEYOU",
+                "number": number,
+                "mensagem": mensagem,
+                "custo": 0,
+                "free": 1
+            }
+
+            headers = {
+                "User-Agent": "IdeYouPrint",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer $2b$10$nyWgDoqN2w6B7ZD1vX5HquJ_9ClGW4OWxC4CK4SNk3xT5BYUd7ljK"
+            }
+
+            response = self.__request(payload, url, "POST", headers)
+
+            print(response)
+
+            return response
+
+        except Exception as e:
+            self.ui.log = f'<span style="color: #ffb22b;">Erro ao enviar mensagem para {number}, "{mensagem}": {str(e)}</span>'
 
     def check_app_version(self) -> int:
-        url = f"{self.base_url}/api/settings/?name=autoprint"
+        try:
+            url = f"{self.base_url}/api/settings/?name=autoprint"
 
-        response = self.__request(None, url, {"User-Agent": "Postman"}, "GET")
+            response = self.__request(None, url, "GET")
 
-        # Check if the response is None or if 'data' is not in the response
-        if response is None or 'version' not in response:
+            # Check if the response is None or if 'data' is not in the response
+            if response is None or 'version' not in response:
+                return 200
+            else:
+                response = response.get('data')
+
+            v1 = float(CONFIG['version'])
+            v2 = float(response.get("version"))
+
+            if v1 < v2:
+                print(repr(response.get("version")), repr(CONFIG['version']))
+                return 400
+
             return 200
-        else:
-            response = response.get('data')
 
-        v1 = float(CONFIG['version'])
-        v2 = float(response.get("version"))
-
-        if v1 < v2:
-            print(repr(response.get("version")), repr(CONFIG['version']))
-            return 400
-
-        return 200
+        except Exception as e:
+            self.ui.log = f'<span style="color: #1976d2;">Erro ao conectar ao sistema: {str(e)}</span>'
+            return 500
 
     def get_order_by_id(self, id_pedido: int = 0) -> dict:
-        for order in CONFIG['queue']:
-            if order['id'] == id_pedido:
-                return order
+        try:
+            for order in CONFIG['queue']:
+                if order['id'] == id_pedido:
+                    return order
 
-        url = f"{self.base_url}/api/pedidos/"
-        payload: dict = {
-            "id": id_pedido
-        }
+            url = f"{self.base_url}/api/pedidos/"
+            payload: dict = {
+                "id": id_pedido
+            }
 
-        return self.__request(payload, url, {"User-Agent": "Postman"}).get('data')
+            return self.__request(payload, url).get('data')
 
-    def set_order_status(self, id: int = 0, status: int = 0) -> dict:
-        url = f"{self.base_url}/api/pedidos/"
-        payload: dict = {
-            "id": id,
-            "status": status,
-            "comentario": "Pedido recusado pela loja." if status == 0 else None
-        }
-        response = self.__request(payload, url, {"User-Agent": "Postman"})
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao buscar pedido {id_pedido}: {str(e)}</span>'
 
-        return response
+    def set_order_status(self, id_pedido: int = 0, status: int = 0) -> dict:
+        try:
+            url = f"{self.base_url}/api/pedidos/"
+            payload: dict = {
+                "id": id_pedido,
+                "status": status,
+                "comentario": "Pedido recusado pela loja." if status == 0 else None
+            }
+            return self.__request(payload, url)
 
-    def set_order_printed(self, id: int = 0) -> dict:
-        url = f"{self.base_url}/api/pedidos/"
-        payload: dict = {
-            "id": id,
-            "printed": 1
-        }
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao atualizar status do pedido {id_pedido} como {status}: {str(e)}</span>'
 
-        return self.__request(payload, url, {"User-Agent": "Postman"})
+    def set_order_printed(self, id_pedido: int = 0) -> dict:
+        try:
+            url = f"{self.base_url}/api/pedidos/"
+            payload: dict = {
+                "id": id_pedido,
+                "printed": 1
+            }
+
+            return self.__request(payload, url, "POST", None)
+
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao definir pedido {id_pedido} como impresso: {str(e)}</span>'
 
     def get_stores(self) -> list:
-        url = f"{self.base_url}/api/lojas/"
-        payload: dict = {
-            "listar": "todos"
-        }
+        try:
+            url = f"{self.base_url}/api/lojas/"
+            payload: dict = {
+                "listar": "todos"
+            }
 
-        response = self.__request(payload, url, {"User-Agent": "Postman"})
+            response = self.__request(payload, url)
 
-        return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
+            return [{"id": loja.get('id'), "nome": loja.get('nome')} for loja in response.get('data')]
 
-    def get_wating_orders(self, id_loja: int = 0) -> list:
-        url = f"{self.base_url}/api/pedidos/"
-        payload: dict = {
-            "listar": "queue",
-            "id_loja": int(id_loja if id_loja > 0 else CONFIG["dStore"])
-        }
-        response = self.__request(payload, url, {"User-Agent": "Postman"})
-
-        self.ui.log = f'<span style="color: #6C6C6C;">verificando a fila de pedidos no servidor.</span>'
-
-        # Return an empty list if the response is not successful or doesn't contain 'data'
-        if response == 0 or not isinstance(response, dict) or 'data' not in response:
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao buscar lojas: {str(e)}</span>'
             return []
 
-        return response.get('data', [])
+    def get_wating_orders(self, id_loja: int = 0) -> list:
+        try:
+            url = f"{self.base_url}/api/pedidos/"
+            payload: dict = {
+                "listar": "queue",
+                "id_loja": int(id_loja if id_loja > 0 else CONFIG["dStore"])
+            }
+            response = self.__request(payload, url, "POST")            
+
+            # Return an empty list if the response is not successful or doesn't contain 'data'
+            if response == 0 or not isinstance(response, dict) or 'data' not in response:
+                return []
+
+            fila = response.get('data', [])
+
+            self.ui.log = f'<span style="color: #3C3C3C;">{len(fila)} pedido{"s" if len(fila) == 1 else ""} na fila!</span>'
+
+            return fila
+
+        except Exception as e:
+            self.ui.log = f'<span style="color: #f77b36;">Erro ao retornar a fila de pedidos do sistema: {str(e)}</span>'
+            return []
 
     def download_order(self, id_pedido: int, template: str) -> str | int:
         file_size = 0
@@ -161,7 +209,7 @@ class IdeYouApi(QThread):
                     os.remove(local_path)  # Remove existing temp file (if any)
 
                 command = f'curl -o "{local_path}" "{self.base_url}/views/print/?id={id_pedido}&template={template}&download=true"'
-                self.ui.log = f'<span style="color: #FFD22B;">#=> {command}</span>'
+                self.ui.log = f'<span style="color: #9C9C9C;">#=> {command}</span>'
                 os.popen(command)
 
                 # subprocess.run(['curl', '-o', local_path, f'{self.base_url}/views/print/?id={id_pedido}&template={template}&download=true'])
@@ -197,7 +245,7 @@ class IdeYouApi(QThread):
                     )
                     gs_command = f'{CONFIG["command"]} {options} {local_path}'
 
-                    self.ui.log = f'<span style="color: #0076F3;">#=> {gs_command}</span>'
+                    self.ui.log = f'<span style="color: #8C8C8C;">#=> {gs_command}</span>'
 
                     # Execute the command for each copy
                     os.popen(gs_command)
@@ -205,6 +253,6 @@ class IdeYouApi(QThread):
 
         except Exception as e:
             self.ui.log = f'<span style="color: #f77b36;">Erro ao imprimir {template}#{pedido.get("id")}: {str(e)}</span>'
-        finally:
+        # finally:
             # os.remove(local_path)
-            self.set_order_printed(pedido.get("id"))
+            # self.set_order_printed(pedido.get("id"))
